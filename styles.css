@@ -53,7 +53,8 @@ h1 {
 
 /* 통합 검색/추가 섹션 */
 .search-add-section {
-    margin-bottom: 20px;
+    margin: 20px 0;
+    position: relative;
 }
 
 .search-add-section .input-group {
@@ -62,17 +63,26 @@ h1 {
     margin-bottom: 10px;
 }
 
-.search-section {
-    margin: 20px 0;
-    position: relative;
-}
-
 .search-input {
-    width: 100%;
+    flex: 1;
     padding: 10px;
-    border: 1px solid #ddd;
+    border: 2px solid #4CAF50;
     border-radius: 4px;
     font-size: 16px;
+}
+
+#addListBtn {
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#addListBtn:hover {
+    background-color: #45a049;
 }
 
 .search-results {
@@ -137,11 +147,6 @@ button {
 
 button:hover {
     opacity: 0.9;
-}
-
-#addListBtn {
-    background-color: #4CAF50;
-    color: white;
 }
 
 .edit-btn {
