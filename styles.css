@@ -5,10 +5,10 @@
 }
 
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Arial', sans-serif;
     margin: 0;
     padding: 20px;
-    background-color: #f5f5f5;
+    background-color: #e8f5e9;
 }
 
 .container {
@@ -71,11 +71,41 @@ button:hover {
     align-items: center;
 }
 
-.delete-list-btn,
-.delete-memo-btn {
+.edit-input {
+    padding: 5px;
+    margin-right: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.edit-list-btn, .edit-memo-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 5px;
+}
+
+.sort-button {
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 5px 0;
+}
+
+.delete-list-btn, .delete-memo-btn {
     background-color: #f44336;
-    padding: 4px 8px;
-    font-size: 12px;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
 }
 
 .delete-list-btn:hover,

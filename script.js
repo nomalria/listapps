@@ -1,6 +1,9 @@
 // 로컬 스토리지에서 데이터 로드
 let lists = JSON.parse(localStorage.getItem('lists')) || [];
 
+// 삭제 확인을 위한 타이머 객체
+const deleteTimers = {};
+
 // 전역 함수 선언
 window.addNewList = function() {
     const titleInput = document.getElementById('newList');
@@ -39,19 +42,139 @@ window.addMemo = function(listId) {
 };
 
 window.deleteList = function(listId) {
-    lists = lists.filter(list => list.id !== listId);
-    saveLists();
-    renderLists();
+    const timerKey = `list_${listId}`;
+    
+    if (deleteTimers[timerKey]) {
+        // 두 번째 클릭: 실제 삭제 실행
+        clearTimeout(deleteTimers[timerKey]);
+        delete deleteTimers[timerKey];
+        
+        lists = lists.filter(list => list.id !== listId);
+        saveLists();
+        renderLists();
+    } else {
+        // 첫 번째 클릭: 확인 타이머 설정
+        const listElement = document.querySelector(`[data-list-id="${listId}"]`);
+        const deleteBtn = listElement.querySelector('.delete-list-btn');
+        deleteBtn.textContent = '삭제 확인';
+        deleteBtn.style.backgroundColor = '#ff4444';
+        
+        deleteTimers[timerKey] = setTimeout(() => {
+            deleteBtn.textContent = '삭제';
+            deleteBtn.style.backgroundColor = '';
+            delete deleteTimers[timerKey];
+        }, 2000);
+    }
 };
 
 window.deleteMemo = function(listId, memoId) {
-    const list = lists.find(l => l.id === listId);
-    if (list) {
-        list.memos = list.memos.filter(memo => memo.id !== memoId);
-        saveLists();
-        renderLists();
+    const timerKey = `memo_${listId}_${memoId}`;
+    
+    if (deleteTimers[timerKey]) {
+        // 두 번째 클릭: 실제 삭제 실행
+        clearTimeout(deleteTimers[timerKey]);
+        delete deleteTimers[timerKey];
+        
+        const list = lists.find(l => l.id === listId);
+        if (list) {
+            list.memos = list.memos.filter(memo => memo.id !== memoId);
+            saveLists();
+            renderLists();
+        }
+    } else {
+        // 첫 번째 클릭: 확인 타이머 설정
+        const memoElement = document.querySelector(`[data-memo-id="${memoId}"]`);
+        const deleteBtn = memoElement.querySelector('.delete-memo-btn');
+        deleteBtn.textContent = '삭제 확인';
+        deleteBtn.style.backgroundColor = '#ff4444';
+        
+        deleteTimers[timerKey] = setTimeout(() => {
+            deleteBtn.textContent = '삭제';
+            deleteBtn.style.backgroundColor = '';
+            delete deleteTimers[timerKey];
+        }, 2000);
     }
 };
+
+// 목록 제목 편집 함수
+function editListTitle(listId) {
+    const list = lists.find(l => l.id === listId);
+    if (!list) return;
+    
+    const titleElement = document.querySelector(`[data-list-id="${listId}"] .list-title span`);
+    const currentTitle = list.title;
+    
+    titleElement.innerHTML = `
+        <input type="text" value="${currentTitle}" class="edit-input">
+        <button onclick="saveListTitle(${listId})">저장</button>
+        <button onclick="cancelEdit(${listId}, 'list')">취소</button>
+    `;
+}
+
+// 목록 제목 저장 함수
+function saveListTitle(listId) {
+    const list = lists.find(l => l.id === listId);
+    if (!list) return;
+    
+    const input = document.querySelector(`[data-list-id="${listId}"] .list-title input`);
+    list.title = input.value.trim();
+    saveLists();
+    renderLists();
+}
+
+// 메모 내용 편집 함수
+function editMemoText(listId, memoId) {
+    const list = lists.find(l => l.id === listId);
+    if (!list) return;
+    
+    const memo = list.memos.find(m => m.id === memoId);
+    if (!memo) return;
+    
+    const memoElement = document.querySelector(`[data-memo-id="${memoId}"]`);
+    const currentText = memo.text;
+    
+    memoElement.innerHTML = `
+        <input type="text" value="${currentText}" class="edit-input">
+        <button onclick="saveMemoText(${listId}, ${memoId})">저장</button>
+        <button onclick="cancelEdit(${listId}, 'memo', ${memoId})">취소</button>
+    `;
+}
+
+// 메모 내용 저장 함수
+function saveMemoText(listId, memoId) {
+    const list = lists.find(l => l.id === listId);
+    if (!list) return;
+    
+    const memo = list.memos.find(m => m.id === memoId);
+    if (!memo) return;
+    
+    const input = document.querySelector(`[data-memo-id="${memoId}"] input`);
+    memo.text = input.value.trim();
+    saveLists();
+    renderLists();
+}
+
+// 편집 취소 함수
+function cancelEdit(listId, type, memoId = null) {
+    renderLists();
+}
+
+// 목록 정렬 함수
+function sortLists() {
+    lists.sort((a, b) => a.title.localeCompare(b.title));
+    saveLists();
+    renderLists();
+}
+
+// 메모 정렬 함수
+function sortMemos(listId) {
+    const list = lists.find(l => l.id === listId);
+    if (!list) return;
+    
+    list.memos.sort((a, b) => a.text.localeCompare(b.text));
+    saveLists();
+    renderLists();
+}
 
 // 목록 렌더링
 function renderLists() {
@@ -60,21 +183,37 @@ function renderLists() {
     
     container.innerHTML = '';
     
+    // 정렬 버튼 추가
+    const sortButton = document.createElement('button');
+    sortButton.textContent = '목록 정렬';
+    sortButton.onclick = sortLists;
+    sortButton.className = 'sort-button';
+    container.appendChild(sortButton);
+    
     lists.forEach(list => {
         const listElement = document.createElement('div');
         listElement.className = 'list-item';
+        listElement.setAttribute('data-list-id', list.id);
         
-        // 목록 제목과 삭제 버튼
+        // 목록 제목과 버튼들
         const titleDiv = document.createElement('div');
         titleDiv.className = 'list-title';
         titleDiv.innerHTML = `
-            ${list.title}
+            <span>${list.title}</span>
+            <button class="edit-list-btn" onclick="editListTitle(${list.id})">편집</button>
             <button class="delete-list-btn" onclick="deleteList(${list.id})">삭제</button>
         `;
         
         // 메모 섹션
         const memoSection = document.createElement('div');
         memoSection.className = 'memo-section';
+        
+        // 메모 정렬 버튼
+        const memoSortButton = document.createElement('button');
+        memoSortButton.textContent = '메모 정렬';
+        memoSortButton.onclick = () => sortMemos(list.id);
+        memoSortButton.className = 'sort-button';
+        memoSection.appendChild(memoSortButton);
         
         // 메모 입력 필드
         const memoInput = document.createElement('input');
@@ -95,8 +234,10 @@ function renderLists() {
         list.memos.forEach(memo => {
             const memoItem = document.createElement('li');
             memoItem.className = 'memo-item';
+            memoItem.setAttribute('data-memo-id', memo.id);
             memoItem.innerHTML = `
-                ${memo.text}
+                <span>${memo.text}</span>
+                <button class="edit-memo-btn" onclick="editMemoText(${list.id}, ${memo.id})">편집</button>
                 <button class="delete-memo-btn" onclick="deleteMemo(${list.id}, ${memo.id})">삭제</button>
             `;
             memoList.appendChild(memoItem);
