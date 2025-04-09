@@ -99,8 +99,6 @@ function addNewList() {
     
     if (!title) return;
     
-    const lists = JSON.parse(localStorage.getItem('lists') || '[]');
-    
     // 동일한 방덱이 있는지 확인
     const existingListIndex = lists.findIndex(list => isSameList(list.title, title));
     
@@ -119,7 +117,7 @@ function addNewList() {
         lists.unshift(newList); // 새 방덱을 맨 위에 추가
     }
     
-    localStorage.setItem('lists', JSON.stringify(lists));
+    saveLists();
     searchInput.value = ''; // 검색창 초기화
     renderLists();
     updateStats();
