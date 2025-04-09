@@ -21,7 +21,7 @@ function saveLists() {
     updateStats();
 }
 
-// 검색 기능
+// 방덱 검색
 function searchLists(query) {
     const searchResults = document.getElementById('searchResults');
     const lists = JSON.parse(localStorage.getItem('lists') || '[]');
@@ -31,66 +31,88 @@ function searchLists(query) {
         return;
     }
 
-    const results = lists.filter(list => 
-        list.title.toLowerCase().includes(query.toLowerCase())
+    // 모든 방덱의 단어들을 추출
+    const allWords = new Set();
+    lists.forEach(list => {
+        const words = list.title.split(' ');
+        words.forEach(word => allWords.add(word));
+    });
+
+    // 검색어와 일치하는 단어들 찾기
+    const matchingWords = Array.from(allWords).filter(word => 
+        word.toLowerCase().includes(query.toLowerCase())
     );
 
-    searchResults.innerHTML = results.map(list => `
-        <div class="list-item" onclick="selectList('${list.id}')">
-            <span>${list.title}</span>
-            <span class="memo-count">${list.memos.length}개의 메모</span>
-        </div>
-    `).join('');
-}
-
-// 검색 입력 이벤트 리스너
-document.getElementById('searchInput').addEventListener('input', (e) => {
-    searchLists(e.target.value);
-});
-
-// 방덱으로 스크롤
-function scrollToList(listId) {
-    const listElement = document.querySelector(`[data-list-id="${listId}"]`);
-    if (listElement) {
-        listElement.scrollIntoView({ behavior: 'smooth' });
-        document.getElementById('searchResults').classList.remove('show');
-        document.getElementById('searchInput').value = '';
+    if (matchingWords.length > 0) {
+        searchResults.innerHTML = matchingWords.map(word => `
+            <div class="list-item" onclick="selectWord('${word}')">
+                <span>${word}</span>
+            </div>
+        `).join('');
+    } else {
+        searchResults.innerHTML = '';
     }
 }
 
-// 방덱 찾기
-function findList(query) {
-    return lists.find(list => 
-        list.title.toLowerCase() === query.toLowerCase()
-    );
+// 단어 선택 시 검색창에 추가
+function selectWord(word) {
+    const searchInput = document.getElementById('searchInput');
+    const currentWords = searchInput.value.trim().split(' ').filter(w => w);
+    if (!currentWords.includes(word)) {
+        currentWords.push(word);
+        searchInput.value = currentWords.join(' ');
+    }
+    document.getElementById('searchResults').innerHTML = '';
 }
 
-// 새 방덱 추가
+// 방덱이 동일한지 확인하는 함수
+function isSameList(list1, list2) {
+    const words1 = list1.split(' ');
+    const words2 = list2.split(' ');
+    
+    // 첫 번째와 두 번째 단어가 일치하는지 확인
+    if (words1[0] !== words2[0] || words1[1] !== words2[1]) {
+        return false;
+    }
+    
+    // 나머지 단어들을 정렬하여 비교
+    const remainingWords1 = words1.slice(2).sort();
+    const remainingWords2 = words2.slice(2).sort();
+    
+    return remainingWords1.join(' ') === remainingWords2.join(' ');
+}
+
+// 방덱 추가
 function addNewList() {
     const searchInput = document.getElementById('searchInput');
     const title = searchInput.value.trim();
     
-    if (title) {
-        // 중복 체크
-        if (lists.some(list => list.title.toLowerCase() === title.toLowerCase())) {
-            alert('이미 존재하는 방덱입니다.');
-            return;
-        }
-        
+    if (!title) return;
+    
+    const lists = JSON.parse(localStorage.getItem('lists') || '[]');
+    
+    // 동일한 방덱이 있는지 확인
+    const existingListIndex = lists.findIndex(list => isSameList(list.title, title));
+    
+    if (existingListIndex !== -1) {
+        // 기존 방덱을 맨 위로 이동
+        const existingList = lists.splice(existingListIndex, 1)[0];
+        lists.unshift(existingList);
+        searchInput.value = ''; // 검색창 초기화
+    } else {
+        // 새 방덱 추가
         const newList = {
             id: Date.now().toString(),
             title: title,
             memos: []
         };
-        
-        lists.push(newList);
-        saveLists();
-        renderLists();
-        
-        // 입력 필드 초기화
-        searchInput.value = '';
-        document.getElementById('searchResults').classList.remove('show');
+        lists.unshift(newList); // 새 방덱을 맨 위에 추가
     }
+    
+    localStorage.setItem('lists', JSON.stringify(lists));
+    searchInput.value = ''; // 검색창 초기화
+    renderLists();
+    updateStats();
 }
 
 // 방덱 삭제
@@ -256,6 +278,23 @@ async function loadFromGithub() {
 // 이벤트 리스너 등록
 document.addEventListener('DOMContentLoaded', function() {
     loadLists();
+    
+    // 검색 입력 필드에 이벤트 리스너 추가
+    document.getElementById('searchInput').addEventListener('input', function() {
+        const query = this.value.trim();
+        if (query) {
+            searchLists(query);
+        } else {
+            document.getElementById('searchResults').innerHTML = '';
+        }
+    });
+    
+    // Enter 키 이벤트 처리
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            addNewList();
+        }
+    });
     
     // 추가 버튼 이벤트 리스너
     document.getElementById('addListBtn').addEventListener('click', addNewList);
