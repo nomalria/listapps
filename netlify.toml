@@ -1,5 +1,6 @@
 [build]
-  publish = "."
+  publish = "/"
+  command = ""
 
 [context.production.environment]
   NODE_VERSION = "20.19.0"

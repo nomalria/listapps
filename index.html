@@ -21,12 +21,12 @@
         </div>
     </div>
     <script>
-        // Netlify 환경 변수를 window 객체에 할당
-        window.GITHUBTOKEN = process.env.GITHUBTOKEN;
         // GitHub 설정
         const GITHUB_USERNAME = 'nomalria';
         const GITHUB_REPO = 'listapps';
         const DATA_FILE = 'lists.json';
+        // Netlify 환경 변수
+        const GITHUBTOKEN = process.env.GITHUBTOKEN || '';
     </script>
     <script src="script.js"></script>
 </body>
