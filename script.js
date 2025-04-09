@@ -149,7 +149,7 @@ async function uploadToGithub() {
         const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/${DATA_FILE}`, {
             method: 'PUT',
             headers: {
-                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Authorization': `token ${GITHUBTOKEN}`,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -175,7 +175,7 @@ async function loadFromGithub() {
     try {
         const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/${DATA_FILE}`, {
             headers: {
-                'Authorization': `token ${GITHUB_TOKEN}`
+                'Authorization': `token ${GITHUBTOKEN}`
             }
         });
 
