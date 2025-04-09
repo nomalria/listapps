@@ -10,11 +10,6 @@
 <body>
     <div class="container">
         <h1>리스트 관리</h1>
-        <div class="input-group">
-            <input type="text" id="newList" placeholder="새 리스트 이름">
-            <button onclick="addNewList()">추가</button>
-        </div>
-        <div id="lists"></div>
         <div class="github-section">
             <div class="input-group">
                 <input type="password" id="githubToken" placeholder="GitHub 토큰 입력">
@@ -24,6 +19,11 @@
                 <button onclick="loadFromGithub()">GitHub에서 불러오기</button>
             </div>
         </div>
+        <div class="input-group">
+            <input type="text" id="newList" placeholder="새 리스트 이름">
+            <button onclick="addNewList()">추가</button>
+        </div>
+        <div id="lists"></div>
     </div>
     <script>
         // GitHub 설정

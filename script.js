@@ -120,107 +120,70 @@ function saveLists() {
     localStorage.setItem('lists', JSON.stringify(lists));
 }
 
-// GitHub에 업로드
-window.uploadToGithub = async function() {
+// GitHub 관련 함수들
+async function uploadToGithub() {
     try {
-        const token = getGithubToken();
-        if (!token) {
-            alert('GitHub 토큰을 입력해주세요.');
-            return;
-        }
-        
-        // 먼저 기존 파일의 sha 값을 가져옵니다
-        let sha = null;
-        try {
-            const checkResponse = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/${DATA_FILE}`, {
-                headers: {
-                    'Authorization': `token ${token}`,
-                    'Accept': 'application/vnd.github.v3+json'
-                }
-            });
-            
-            if (checkResponse.ok) {
-                const fileData = await checkResponse.json();
-                sha = fileData.sha;
-            }
-        } catch (error) {
-            console.log('기존 파일이 없거나 접근할 수 없습니다. 새로 생성합니다.');
-        }
-        
-        const data = JSON.stringify(lists, null, 2);
-        const requestBody = {
-            message: 'Update lists data',
-            content: btoa(unescape(encodeURIComponent(data))),
-            branch: 'main'
-        };
-        
-        // sha 값이 있으면 추가합니다
-        if (sha) {
-            requestBody.sha = sha;
-        }
+        const lists = JSON.parse(localStorage.getItem('lists') || '[]');
+        const content = btoa(JSON.stringify(lists, null, 2));
         
         const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/${DATA_FILE}`, {
             method: 'PUT',
             headers: {
-                'Authorization': `token ${token}`,
+                'Authorization': `token ${window.GITHUBTOKEN}`,
                 'Content-Type': 'application/json',
-                'Accept': 'application/vnd.github.v3+json'
             },
-            body: JSON.stringify(requestBody)
+            body: JSON.stringify({
+                message: 'Update lists data',
+                content: content
+            })
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            console.error('GitHub API Error:', errorData);
-            throw new Error(`업로드 실패 (${response.status}: ${errorData.message})`);
+            throw new Error('GitHub 업로드 실패');
         }
-        
-        const responseData = await response.json();
-        console.log('업로드 성공:', responseData);
-        alert('GitHub에 성공적으로 업로드되었습니다.');
-    } catch (error) {
-        console.error('Error:', error);
-        alert(`GitHub 업로드 중 오류가 발생했습니다: ${error.message}`);
-    }
-};
 
-// GitHub에서 불러오기
-window.loadFromGithub = async function() {
+        alert('GitHub에 성공적으로 업로드되었습니다!');
+    } catch (error) {
+        console.error('GitHub 업로드 오류:', error);
+        alert('GitHub 업로드 중 오류가 발생했습니다.');
+    }
+}
+
+async function loadFromGithub() {
     try {
-        const token = getGithubToken();
-        if (!token) {
-            alert('GitHub 토큰을 입력해주세요.');
-            return;
-        }
-        
         const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/${DATA_FILE}`, {
             headers: {
-                'Authorization': `token ${token}`,
-                'Accept': 'application/vnd.github.v3+json'
+                'Authorization': `token ${window.GITHUBTOKEN}`
             }
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            console.error('GitHub API Error:', errorData);
-            throw new Error(`데이터 불러오기 실패 (${response.status}: ${errorData.message})`);
+            throw new Error('GitHub에서 데이터를 가져오는데 실패했습니다');
         }
 
         const data = await response.json();
-        console.log('데이터 불러오기 성공:', data);
-        const content = decodeURIComponent(escape(atob(data.content)));
-        lists = JSON.parse(content);
-        saveLists();
+        const content = atob(data.content);
+        const lists = JSON.parse(content);
+        
+        localStorage.setItem('lists', JSON.stringify(lists));
         renderLists();
-        alert('GitHub에서 데이터를 성공적으로 불러왔습니다.');
+        alert('GitHub에서 데이터를 성공적으로 불러왔습니다!');
     } catch (error) {
-        console.error('Error:', error);
-        alert(`GitHub에서 데이터를 불러오는 중 오류가 발생했습니다: ${error.message}`);
+        console.error('GitHub 데이터 로드 오류:', error);
+        alert('GitHub에서 데이터를 불러오는 중 오류가 발생했습니다.');
     }
-};
+}
 
-// DOM이 로드된 후 실행
-document.addEventListener('DOMContentLoaded', () => {
-    // 초기 목록 렌더링
+// 이벤트 리스너 등록
+document.addEventListener('DOMContentLoaded', function() {
+    // GitHub 버튼 이벤트 리스너
+    document.getElementById('uploadGithubBtn').addEventListener('click', uploadToGithub);
+    document.getElementById('loadGithubBtn').addEventListener('click', loadFromGithub);
+    
+    // 기존 이벤트 리스너들
+    document.getElementById('addListBtn').addEventListener('click', addNewList);
+    document.getElementById('addMemoBtn').addEventListener('click', addMemo);
+    
+    // 초기 리스트 표시
     renderLists();
 }); 
