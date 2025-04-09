@@ -363,7 +363,6 @@ async function loadFromGithub() {
         }
 
         const data = await response.json();
-        // UTF-8 문자를 처리하기 위해 decodeURIComponent 사용
         const content = decodeURIComponent(escape(atob(data.content)));
         const lists = JSON.parse(content);
         
