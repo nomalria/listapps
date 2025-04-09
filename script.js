@@ -3,11 +3,6 @@ let lists = JSON.parse(localStorage.getItem('lists')) || [];
 
 // DOM이 로드된 후 실행
 document.addEventListener('DOMContentLoaded', () => {
-    // 이벤트 리스너 추가
-    document.getElementById('addListBtn').addEventListener('click', addNewList);
-    document.getElementById('uploadBtn').addEventListener('click', uploadToGithub);
-    document.getElementById('loadBtn').addEventListener('click', loadFromGithub);
-    
     // 초기 목록 렌더링
     renderLists();
 });
