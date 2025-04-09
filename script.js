@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 새 목록 추가
 function addNewList() {
-    const titleInput = document.getElementById('listTitle');
+    const titleInput = document.getElementById('newList');
     const title = titleInput.value.trim();
     
     if (title) {
@@ -69,7 +69,7 @@ function deleteMemo(listId, memoId) {
 
 // 목록 렌더링
 function renderLists() {
-    const container = document.getElementById('listsContainer');
+    const container = document.getElementById('lists');
     container.innerHTML = '';
     
     lists.forEach(list => {
