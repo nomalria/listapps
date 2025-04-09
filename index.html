@@ -57,12 +57,19 @@
         <div id="lists" class="lists-container"></div>
     </div>
     
+    <!-- GitHub 설정 -->
     <script>
         // GitHub 설정
         const GITHUB_USERNAME = 'nomalria';
         const GITHUB_REPO = 'listapps';
         const DATA_FILE = 'lists.json';
-        
+    </script>
+    
+    <!-- 메인 스크립트 -->
+    <script src="script.js"></script>
+    
+    <!-- 이벤트 리스너 설정 -->
+    <script>
         // GitHub 토큰 가져오기 함수
         function getGithubToken() {
             const token = document.getElementById('githubToken').value;
@@ -92,25 +99,25 @@
                 if (e.key === 'Enter') {
                     const query = this.value.trim();
                     if (query) {
-                        const existingList = findList(query);
-                        if (existingList) {
-                            // 검색 결과가 있으면 해당 방덱으로 이동
-                            const listElement = document.querySelector(`[data-list-id="${existingList.id}"]`);
-                            if (listElement) {
-                                listElement.scrollIntoView({ behavior: 'smooth' });
-                            }
-                        } else {
-                            // 검색 결과가 없으면 새 방덱 추가
-                            addNewList();
-                        }
+                        // 검색 결과가 없으면 새 방덱 추가
+                        addNewList();
                     }
                 }
             });
             
             // 정렬 버튼 이벤트 리스너
             document.getElementById('sortBtn').addEventListener('click', sortAll);
+            
+            // GitHub 버튼 이벤트 리스너
+            document.getElementById('uploadGithubBtn').addEventListener('click', uploadToGithub);
+            document.getElementById('loadGithubBtn').addEventListener('click', loadFromGithub);
+            
+            // 추가 버튼 이벤트 리스너
+            document.getElementById('addListBtn').addEventListener('click', addNewList);
+            
+            // 초기 데이터 로드
+            loadLists();
         });
     </script>
-    <script src="script.js"></script>
 </body>
 </html>

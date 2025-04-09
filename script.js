@@ -178,15 +178,16 @@ function deleteMemo(listId, memoId) {
 
 // 방덱 목록 렌더링
 function renderLists() {
+    console.log('방덱 목록 렌더링 시작');
     const listsContainer = document.getElementById('lists');
     listsContainer.innerHTML = lists.map(list => `
         <div class="list-item" data-list-id="${list.id}">
-            <div class="list-title" onclick="handleListClick('${list.id}')">
+            <div class="list-title">
                 <span class="list-title-text">${list.title}</span>
                 <span class="memo-count">${list.memos.length}/50</span>
                 <div class="button-group">
-                    <button class="edit-btn" onclick="event.stopPropagation(); startEditList('${list.id}')">편집</button>
-                    <button class="delete-btn" onclick="event.stopPropagation(); deleteList('${list.id}')">삭제</button>
+                    <button class="edit-btn" onclick="startEditList('${list.id}')">편집</button>
+                    <button class="delete-btn" onclick="deleteList('${list.id}')">삭제</button>
                 </div>
             </div>
             <div class="memo-section" id="memoSection-${list.id}">
@@ -199,8 +200,8 @@ function renderLists() {
                         <div class="memo-item" data-memo-id="${memo.id}">
                             <span class="memo-text">${memo.text}</span>
                             <div class="memo-buttons">
-                                <button class="edit-btn" onclick="event.stopPropagation(); startEditMemo('${list.id}', '${memo.id}')">편집</button>
-                                <button class="delete-btn" onclick="event.stopPropagation(); deleteMemo('${list.id}', '${memo.id}')">삭제</button>
+                                <button class="edit-btn" onclick="startEditMemo('${list.id}', '${memo.id}')">편집</button>
+                                <button class="delete-btn" onclick="deleteMemo('${list.id}', '${memo.id}')">삭제</button>
                             </div>
                         </div>
                     `).join('')}
@@ -208,6 +209,18 @@ function renderLists() {
             </div>
         </div>
     `).join('');
+
+    // 이벤트 리스너 추가
+    document.querySelectorAll('.list-title').forEach(title => {
+        title.addEventListener('click', function(e) {
+            if (!e.target.closest('.button-group')) {
+                const listId = this.closest('.list-item').dataset.listId;
+                toggleMemos(listId);
+            }
+        });
+    });
+    
+    console.log('방덱 목록 렌더링 완료');
 }
 
 // 방덱 클릭 처리
@@ -365,149 +378,170 @@ async function loadFromGithub() {
 
 // 목록 및 메모 정렬
 function sortAll() {
-    // 방덱 목록 정렬
-    lists.sort((a, b) => a.title.localeCompare(b.title, 'ko'));
+    console.log('모든 방덱과 메모 정렬 시작');
+    
+    // 방덱 정렬
+    lists.sort((a, b) => a.title.localeCompare(b.title));
     
     // 각 방덱의 메모 정렬
     lists.forEach(list => {
-        list.memos.sort((a, b) => a.text.localeCompare(b.text, 'ko'));
+        list.memos.sort((a, b) => a.text.localeCompare(b.text));
     });
     
     saveLists();
     renderLists();
+    console.log('정렬 완료');
 }
 
 // 방덱 편집 시작
 function startEditList(listId) {
-    // 다른 방덱이나 메모를 편집 중이면 저장
-    if (editingListId) {
-        saveListEdit(editingListId);
-    }
-    if (editingMemoId) {
-        const list = lists.find(l => l.memos.some(m => m.id === editingMemoId));
-        if (list) {
-            saveMemoEdit(list.id, editingMemoId);
-        }
-    }
-    
+    console.log('방덱 편집 시작:', listId);
     const list = lists.find(l => l.id === listId);
-    if (!list) return;
-    
-    editingListId = listId;
-    
+    if (!list) {
+        console.error('방덱을 찾을 수 없습니다:', listId);
+        return;
+    }
+
+    const listTitle = document.querySelector(`[data-list-id="${listId}"] .list-title-text`);
+    if (!listTitle) {
+        console.error('방덱 제목 요소를 찾을 수 없습니다:', listId);
+        return;
+    }
+
     // 편집 모드로 전환
-    const listElement = document.querySelector(`.list-item[data-list-id="${listId}"]`);
-    const titleElement = listElement.querySelector('.list-title-text');
-    const originalTitle = titleElement.textContent;
-    
-    // 편집 UI 생성
-    titleElement.innerHTML = `
-        <input type="text" class="edit-input" value="${originalTitle}" id="edit-title-${listId}" onkeypress="if(event.key === 'Enter') saveListEdit('${listId}')">
-        <div class="edit-buttons">
-            <button class="save-btn" onclick="event.stopPropagation(); saveListEdit('${listId}')">저장</button>
-            <button class="cancel-btn" onclick="event.stopPropagation(); cancelListEdit('${listId}', '${originalTitle}')">취소</button>
+    listTitle.innerHTML = `
+        <div class="edit-container">
+            <input type="text" class="edit-input" value="${list.title}" id="editListInput-${listId}">
+            <div class="edit-buttons">
+                <button class="save-btn" onclick="saveListEdit('${listId}')">저장</button>
+                <button class="cancel-btn" onclick="cancelListEdit('${listId}')">취소</button>
+            </div>
         </div>
     `;
-    
+
     // 입력 필드에 포커스
-    setTimeout(() => {
-        document.getElementById(`edit-title-${listId}`).focus();
-    }, 0);
+    const input = document.getElementById(`editListInput-${listId}`);
+    if (input) {
+        input.focus();
+        input.select();
+    }
+
+    editingListId = listId;
 }
 
 // 방덱 편집 저장
 function saveListEdit(listId) {
+    console.log('방덱 편집 저장:', listId);
+    const input = document.getElementById(`editListInput-${listId}`);
+    if (!input) {
+        console.error('편집 입력 필드를 찾을 수 없습니다:', listId);
+        return;
+    }
+
+    const newTitle = input.value.trim();
+    if (!newTitle) {
+        alert('방덱 제목을 입력해주세요.');
+        return;
+    }
+
     const list = lists.find(l => l.id === listId);
-    if (!list) return;
-    
-    const editInput = document.getElementById(`edit-title-${listId}`);
-    const newTitle = editInput.value.trim();
-    
-    if (newTitle) {
+    if (list) {
         list.title = newTitle;
         saveLists();
-        editingListId = null;
         renderLists();
-        updateStats();
-    } else {
-        alert('방덱 이름을 입력해주세요.');
     }
+
+    editingListId = null;
 }
 
 // 방덱 편집 취소
-function cancelListEdit(listId, originalTitle) {
+function cancelListEdit(listId) {
+    console.log('방덱 편집 취소:', listId);
+    const list = lists.find(l => l.id === listId);
+    if (list) {
+        renderLists();
+    }
     editingListId = null;
-    renderLists();
 }
 
 // 메모 편집 시작
 function startEditMemo(listId, memoId) {
-    // 다른 방덱이나 메모를 편집 중이면 저장
-    if (editingListId) {
-        saveListEdit(editingListId);
-    }
-    if (editingMemoId && editingMemoId !== memoId) {
-        const list = lists.find(l => l.memos.some(m => m.id === editingMemoId));
-        if (list) {
-            saveMemoEdit(list.id, editingMemoId);
-        }
-    }
-    
+    console.log('메모 편집 시작:', listId, memoId);
     const list = lists.find(l => l.id === listId);
-    if (!list) return;
-    
+    if (!list) {
+        console.error('방덱을 찾을 수 없습니다:', listId);
+        return;
+    }
+
     const memo = list.memos.find(m => m.id === memoId);
-    if (!memo) return;
-    
-    editingMemoId = memoId;
-    
+    if (!memo) {
+        console.error('메모를 찾을 수 없습니다:', memoId);
+        return;
+    }
+
+    const memoText = document.querySelector(`[data-memo-id="${memoId}"] .memo-text`);
+    if (!memoText) {
+        console.error('메모 텍스트 요소를 찾을 수 없습니다:', memoId);
+        return;
+    }
+
     // 편집 모드로 전환
-    const memoElement = document.querySelector(`.memo-item[data-memo-id="${memoId}"]`);
-    if (!memoElement) return;
-    
-    const memoTextElement = memoElement.querySelector('.memo-text');
-    const originalText = memoTextElement.textContent;
-    
-    // 편집 UI 생성
-    memoElement.innerHTML = `
-        <input type="text" class="edit-input" value="${originalText}" id="edit-memo-${memoId}" onkeypress="if(event.key === 'Enter') saveMemoEdit('${listId}', '${memoId}')">
-        <div class="edit-buttons">
-            <button class="save-btn" onclick="event.stopPropagation(); saveMemoEdit('${listId}', '${memoId}')">저장</button>
-            <button class="cancel-btn" onclick="event.stopPropagation(); cancelMemoEdit('${listId}', '${memoId}', '${originalText}')">취소</button>
+    memoText.innerHTML = `
+        <div class="edit-container">
+            <input type="text" class="edit-input" value="${memo.text}" id="editMemoInput-${memoId}">
+            <div class="edit-buttons">
+                <button class="save-btn" onclick="saveMemoEdit('${listId}', '${memoId}')">저장</button>
+                <button class="cancel-btn" onclick="cancelMemoEdit('${listId}', '${memoId}')">취소</button>
+            </div>
         </div>
     `;
-    
+
     // 입력 필드에 포커스
-    setTimeout(() => {
-        document.getElementById(`edit-memo-${memoId}`).focus();
-    }, 0);
+    const input = document.getElementById(`editMemoInput-${memoId}`);
+    if (input) {
+        input.focus();
+        input.select();
+    }
+
+    editingMemoId = memoId;
 }
 
 // 메모 편집 저장
 function saveMemoEdit(listId, memoId) {
-    const list = lists.find(l => l.id === listId);
-    if (!list) return;
-    
-    const memo = list.memos.find(m => m.id === memoId);
-    if (!memo) return;
-    
-    const editInput = document.getElementById(`edit-memo-${memoId}`);
-    const newText = editInput.value.trim();
-    
-    if (newText) {
-        memo.text = newText;
-        saveLists();
-        editingMemoId = null;
-        renderLists();
-    } else {
-        alert('메모 내용을 입력해주세요.');
+    console.log('메모 편집 저장:', listId, memoId);
+    const input = document.getElementById(`editMemoInput-${memoId}`);
+    if (!input) {
+        console.error('편집 입력 필드를 찾을 수 없습니다:', memoId);
+        return;
     }
+
+    const newText = input.value.trim();
+    if (!newText) {
+        alert('메모 내용을 입력해주세요.');
+        return;
+    }
+
+    const list = lists.find(l => l.id === listId);
+    if (list) {
+        const memo = list.memos.find(m => m.id === memoId);
+        if (memo) {
+            memo.text = newText;
+            saveLists();
+            renderLists();
+        }
+    }
+
+    editingMemoId = null;
 }
 
 // 메모 편집 취소
-function cancelMemoEdit(listId, memoId, originalText) {
+function cancelMemoEdit(listId, memoId) {
+    console.log('메모 편집 취소:', listId, memoId);
+    const list = lists.find(l => l.id === listId);
+    if (list) {
+        renderLists();
+    }
     editingMemoId = null;
-    renderLists();
 }
 
 // 페이지 로드 시 이벤트 리스너 추가
