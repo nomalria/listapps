@@ -8,6 +8,10 @@ const deleteTimers = {};
 // 현재 선택된 추천문구 인덱스
 let selectedIndex = -1;
 
+// 전역 변수 추가
+let editingListId = null;
+let editingMemoId = null;
+
 // 방덱 목록 불러오기
 function loadLists() {
     const savedLists = localStorage.getItem('lists');
@@ -177,7 +181,7 @@ function renderLists() {
     const listsContainer = document.getElementById('lists');
     listsContainer.innerHTML = lists.map(list => `
         <div class="list-item" data-list-id="${list.id}">
-            <div class="list-title" onclick="toggleMemos('${list.id}')">
+            <div class="list-title" onclick="handleListClick('${list.id}')">
                 <span class="list-title-text">${list.title}</span>
                 <span class="memo-count">${list.memos.length}/50</span>
                 <div class="button-group">
@@ -204,6 +208,23 @@ function renderLists() {
             </div>
         </div>
     `).join('');
+}
+
+// 방덱 클릭 처리
+function handleListClick(listId) {
+    // 편집 중인 방덱이나 메모가 있으면 저장
+    if (editingListId) {
+        saveListEdit(editingListId);
+    }
+    if (editingMemoId) {
+        const list = lists.find(l => l.memos.some(m => m.id === editingMemoId));
+        if (list) {
+            saveMemoEdit(list.id, editingMemoId);
+        }
+    }
+    
+    // 메모 섹션 토글
+    toggleMemos(listId);
 }
 
 // 메모 섹션 토글
@@ -358,8 +379,21 @@ function sortAll() {
 
 // 방덱 편집 시작
 function startEditList(listId) {
+    // 다른 방덱이나 메모를 편집 중이면 저장
+    if (editingListId) {
+        saveListEdit(editingListId);
+    }
+    if (editingMemoId) {
+        const list = lists.find(l => l.memos.some(m => m.id === editingMemoId));
+        if (list) {
+            saveMemoEdit(list.id, editingMemoId);
+        }
+    }
+    
     const list = lists.find(l => l.id === listId);
     if (!list) return;
+    
+    editingListId = listId;
     
     // 편집 모드로 전환
     const listElement = document.querySelector(`.list-item[data-list-id="${listId}"]`);
@@ -392,6 +426,7 @@ function saveListEdit(listId) {
     if (newTitle) {
         list.title = newTitle;
         saveLists();
+        editingListId = null;
         renderLists();
         updateStats();
     } else {
@@ -401,16 +436,30 @@ function saveListEdit(listId) {
 
 // 방덱 편집 취소
 function cancelListEdit(listId, originalTitle) {
+    editingListId = null;
     renderLists();
 }
 
 // 메모 편집 시작
 function startEditMemo(listId, memoId) {
+    // 다른 방덱이나 메모를 편집 중이면 저장
+    if (editingListId) {
+        saveListEdit(editingListId);
+    }
+    if (editingMemoId && editingMemoId !== memoId) {
+        const list = lists.find(l => l.memos.some(m => m.id === editingMemoId));
+        if (list) {
+            saveMemoEdit(list.id, editingMemoId);
+        }
+    }
+    
     const list = lists.find(l => l.id === listId);
     if (!list) return;
     
     const memo = list.memos.find(m => m.id === memoId);
     if (!memo) return;
+    
+    editingMemoId = memoId;
     
     // 편집 모드로 전환
     const memoElement = document.querySelector(`.memo-item[data-memo-id="${memoId}"]`);
@@ -448,6 +497,7 @@ function saveMemoEdit(listId, memoId) {
     if (newText) {
         memo.text = newText;
         saveLists();
+        editingMemoId = null;
         renderLists();
     } else {
         alert('메모 내용을 입력해주세요.');
@@ -456,6 +506,7 @@ function saveMemoEdit(listId, memoId) {
 
 // 메모 편집 취소
 function cancelMemoEdit(listId, memoId, originalText) {
+    editingMemoId = null;
     renderLists();
 }
 
