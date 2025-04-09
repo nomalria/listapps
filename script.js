@@ -288,7 +288,8 @@ async function uploadToGithub() {
         }
         
         const lists = JSON.parse(localStorage.getItem('lists') || '[]');
-        const content = btoa(JSON.stringify(lists, null, 2));
+        // UTF-8 문자를 처리하기 위해 encodeURIComponent 사용
+        const content = btoa(unescape(encodeURIComponent(JSON.stringify(lists, null, 2))));
         
         const requestBody = {
             message: 'Update lists data',
@@ -341,7 +342,8 @@ async function loadFromGithub() {
         }
 
         const data = await response.json();
-        const content = atob(data.content);
+        // UTF-8 문자를 처리하기 위해 decodeURIComponent 사용
+        const content = decodeURIComponent(escape(atob(data.content)));
         const lists = JSON.parse(content);
         
         localStorage.setItem('lists', JSON.stringify(lists));
@@ -356,12 +358,22 @@ async function loadFromGithub() {
 // 이벤트 리스너 등록
 document.addEventListener('DOMContentLoaded', function() {
     // GitHub 버튼 이벤트 리스너
-    document.getElementById('uploadGithubBtn').addEventListener('click', uploadToGithub);
-    document.getElementById('loadGithubBtn').addEventListener('click', loadFromGithub);
+    const uploadGithubBtn = document.getElementById('uploadGithubBtn');
+    const loadGithubBtn = document.getElementById('loadGithubBtn');
+    
+    if (uploadGithubBtn) {
+        uploadGithubBtn.addEventListener('click', uploadToGithub);
+    }
+    
+    if (loadGithubBtn) {
+        loadGithubBtn.addEventListener('click', loadFromGithub);
+    }
     
     // 기존 이벤트 리스너들
-    document.getElementById('addListBtn').addEventListener('click', addNewList);
-    document.getElementById('addMemoBtn').addEventListener('click', addMemo);
+    const addListBtn = document.getElementById('addListBtn');
+    if (addListBtn) {
+        addListBtn.addEventListener('click', addNewList);
+    }
     
     // 초기 리스트 표시
     renderLists();
