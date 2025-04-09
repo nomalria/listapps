@@ -364,7 +364,10 @@ async function loadFromGithub() {
 
         const data = await response.json();
         const content = decodeURIComponent(escape(atob(data.content)));
-        const lists = JSON.parse(content);
+        const loadedLists = JSON.parse(content);
+        
+        // 전역 lists 변수 업데이트
+        lists = loadedLists;
         
         localStorage.setItem('lists', JSON.stringify(lists));
         renderLists();
