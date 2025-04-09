@@ -33,8 +33,18 @@
         
         // GitHub 토큰 가져오기 함수
         function getGithubToken() {
-            return document.getElementById('githubToken').value;
+            const token = document.getElementById('githubToken').value;
+            window.GITHUBTOKEN = token; // 토큰을 window 객체에 저장
+            return token;
         }
+        
+        // 페이지 로드 시 이벤트 리스너 추가
+        document.addEventListener('DOMContentLoaded', function() {
+            // GitHub 토큰 입력 필드에 이벤트 리스너 추가
+            document.getElementById('githubToken').addEventListener('input', function() {
+                window.GITHUBTOKEN = this.value;
+            });
+        });
     </script>
     <script src="script.js"></script>
 </body>

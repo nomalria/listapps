@@ -123,13 +123,19 @@ function saveLists() {
 // GitHub 관련 함수들
 async function uploadToGithub() {
     try {
+        const token = getGithubToken();
+        if (!token) {
+            alert('GitHub 토큰을 입력해주세요.');
+            return;
+        }
+        
         const lists = JSON.parse(localStorage.getItem('lists') || '[]');
         const content = btoa(JSON.stringify(lists, null, 2));
         
         const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/${DATA_FILE}`, {
             method: 'PUT',
             headers: {
-                'Authorization': `token ${window.GITHUBTOKEN}`,
+                'Authorization': `token ${token}`,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -151,9 +157,15 @@ async function uploadToGithub() {
 
 async function loadFromGithub() {
     try {
+        const token = getGithubToken();
+        if (!token) {
+            alert('GitHub 토큰을 입력해주세요.');
+            return;
+        }
+        
         const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/${DATA_FILE}`, {
             headers: {
-                'Authorization': `token ${window.GITHUBTOKEN}`
+                'Authorization': `token ${token}`
             }
         });
 
