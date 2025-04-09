@@ -21,25 +21,32 @@ function saveLists() {
     updateStats();
 }
 
-// 방덱 검색
+// 검색 기능
 function searchLists(query) {
     const searchResults = document.getElementById('searchResults');
+    const lists = JSON.parse(localStorage.getItem('lists') || '[]');
+    
+    if (!query) {
+        searchResults.innerHTML = '';
+        return;
+    }
+
     const results = lists.filter(list => 
         list.title.toLowerCase().includes(query.toLowerCase())
     );
-    
-    if (results.length > 0) {
-        searchResults.innerHTML = results.map(list => `
-            <div class="search-result-item" onclick="scrollToList('${list.id}')">
-                ${list.title}
-            </div>
-        `).join('');
-        searchResults.classList.add('show');
-    } else {
-        searchResults.innerHTML = '';
-        searchResults.classList.remove('show');
-    }
+
+    searchResults.innerHTML = results.map(list => `
+        <div class="list-item" onclick="selectList('${list.id}')">
+            <span>${list.title}</span>
+            <span class="memo-count">${list.memos.length}개의 메모</span>
+        </div>
+    `).join('');
 }
+
+// 검색 입력 이벤트 리스너
+document.getElementById('searchInput').addEventListener('input', (e) => {
+    searchLists(e.target.value);
+});
 
 // 방덱으로 스크롤
 function scrollToList(listId) {

@@ -4,3 +4,5 @@ config.js
 # 시스템 파일
 .DS_Store
 Thumbs.db 
+# Local Netlify folder
+.netlify
