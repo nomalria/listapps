@@ -243,44 +243,55 @@ async function uploadToGithub() {
         // JSON 문자열 생성
         const jsonString = JSON.stringify(lists, null, 2);
         
-        // UTF-8 인코딩
-        let base64Content;
+        // Base64 인코딩
+        const base64Content = btoa(unescape(encodeURIComponent(jsonString)));
+        
+        // 파일 존재 여부 확인
+        let sha;
         try {
-            // 방법 1: TextEncoder 사용
-            const encoder = new TextEncoder();
-            const bytes = encoder.encode(jsonString);
-            base64Content = btoa(String.fromCharCode.apply(null, bytes));
-        } catch (e) {
-            console.error('TextEncoder 실패:', e);
-            try {
-                // 방법 2: escape 사용
-                base64Content = btoa(unescape(encodeURIComponent(jsonString)));
-            } catch (e2) {
-                console.error('escape 실패:', e2);
-                // 방법 3: 직접 인코딩
-                base64Content = btoa(jsonString);
+            const checkResponse = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/${DATA_FILE}`, {
+                headers: {
+                    'Authorization': `token ${token}`
+                }
+            });
+            
+            if (checkResponse.ok) {
+                const data = await checkResponse.json();
+                sha = data.sha;
             }
+        } catch (error) {
+            console.log('파일이 존재하지 않습니다. 새로 생성합니다.');
         }
         
+        // 요청 본문 준비
+        const requestBody = {
+            message: 'Update lists.json',
+            content: base64Content
+        };
+        
+        // SHA가 있으면 추가
+        if (sha) {
+            requestBody.sha = sha;
+        }
+        
+        // GitHub API 호출
         const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/${DATA_FILE}`, {
             method: 'PUT',
             headers: {
                 'Authorization': `token ${token}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                message: 'Update lists data',
-                content: base64Content
-            })
+            body: JSON.stringify(requestBody)
         });
         
         if (response.ok) {
             alert('GitHub에 업로드되었습니다.');
         } else {
-            throw new Error('업로드 실패');
+            const errorData = await response.json();
+            throw new Error(errorData.message || '업로드 실패');
         }
     } catch (error) {
-        alert('GitHub 업로드 중 오류가 발생했습니다: ' + error.message);
+        alert('GitHub에 업로드하는 중 오류가 발생했습니다: ' + error.message);
     }
 }
 
@@ -306,28 +317,10 @@ async function loadFromGithub() {
             const base64Content = data.content;
             const binaryContent = atob(base64Content);
             
-            // UTF-8 디코딩 시도
-            let decodedContent;
-            try {
-                // 방법 1: TextDecoder 사용
-                const bytes = new Uint8Array(binaryContent.length);
-                for (let i = 0; i < binaryContent.length; i++) {
-                    bytes[i] = binaryContent.charCodeAt(i);
-                }
-                decodedContent = new TextDecoder('utf-8').decode(bytes);
-            } catch (e) {
-                console.error('TextDecoder 실패:', e);
-                try {
-                    // 방법 2: decodeURIComponent 사용
-                    decodedContent = decodeURIComponent(escape(binaryContent));
-                } catch (e2) {
-                    console.error('decodeURIComponent 실패:', e2);
-                    // 방법 3: 직접 사용
-                    decodedContent = binaryContent;
-                }
-            }
+            // UTF-8 디코딩
+            const decodedContent = decodeURIComponent(escape(binaryContent));
             
-            // JSON 파싱 시도
+            // JSON 파싱
             try {
                 lists = JSON.parse(decodedContent);
                 saveLists();
