@@ -2,31 +2,12 @@
   publish = "."
   command = ""
 
-[context.production.environment]
-  NODE_VERSION = "20.19.0"
-
-[build.environment]
-  NODE_VERSION = "20.19.0"
-
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-[build.processing]
-  skip_processing = false
-[build.processing.css]
-  bundle = true
-  minify = true
-[build.processing.js]
-  bundle = true
-  minify = true
-[build.processing.html]
-  pretty_urls = true
-[build.processing.images]
-  compress = true
-
 [[headers]]
   for = "/*"
   [headers.values]
-  Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Origin = "*"
