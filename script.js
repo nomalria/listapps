@@ -3,6 +3,12 @@ let lists = JSON.parse(localStorage.getItem('lists')) || [];
 
 // DOM이 로드된 후 실행
 document.addEventListener('DOMContentLoaded', () => {
+    // 이벤트 리스너 추가
+    document.getElementById('addListBtn').addEventListener('click', addNewList);
+    document.getElementById('uploadBtn').addEventListener('click', uploadToGithub);
+    document.getElementById('loadBtn').addEventListener('click', loadFromGithub);
+    
+    // 초기 목록 렌더링
     renderLists();
 });
 
@@ -69,24 +75,64 @@ function renderLists() {
     lists.forEach(list => {
         const listElement = document.createElement('div');
         listElement.className = 'list-item';
-        listElement.innerHTML = `
-            <div class="list-title">
-                ${list.title}
-                <button onclick="deleteList(${list.id})">삭제</button>
-            </div>
-            <div class="memo-section">
-                <input type="text" id="memo-input-${list.id}" class="memo-input" placeholder="새 메모 추가">
-                <button onclick="addMemo(${list.id})">메모 추가</button>
-                <ul class="memo-list">
-                    ${list.memos.map(memo => `
-                        <li class="memo-item">
-                            ${memo.text}
-                            <button onclick="deleteMemo(${list.id}, ${memo.id})">삭제</button>
-                        </li>
-                    `).join('')}
-                </ul>
-            </div>
+        
+        // 목록 제목과 삭제 버튼
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'list-title';
+        titleDiv.innerHTML = `
+            ${list.title}
+            <button class="delete-list-btn" data-id="${list.id}">삭제</button>
         `;
+        
+        // 메모 섹션
+        const memoSection = document.createElement('div');
+        memoSection.className = 'memo-section';
+        
+        // 메모 입력 필드
+        const memoInput = document.createElement('input');
+        memoInput.type = 'text';
+        memoInput.id = `memo-input-${list.id}`;
+        memoInput.className = 'memo-input';
+        memoInput.placeholder = '새 메모 추가';
+        
+        // 메모 추가 버튼
+        const addMemoBtn = document.createElement('button');
+        addMemoBtn.textContent = '메모 추가';
+        addMemoBtn.addEventListener('click', () => addMemo(list.id));
+        
+        // 메모 목록
+        const memoList = document.createElement('ul');
+        memoList.className = 'memo-list';
+        
+        list.memos.forEach(memo => {
+            const memoItem = document.createElement('li');
+            memoItem.className = 'memo-item';
+            memoItem.innerHTML = `
+                ${memo.text}
+                <button class="delete-memo-btn" data-list-id="${list.id}" data-memo-id="${memo.id}">삭제</button>
+            `;
+            memoList.appendChild(memoItem);
+        });
+        
+        // 메모 섹션에 요소 추가
+        memoSection.appendChild(memoInput);
+        memoSection.appendChild(addMemoBtn);
+        memoSection.appendChild(memoList);
+        
+        // 목록 요소에 추가
+        listElement.appendChild(titleDiv);
+        listElement.appendChild(memoSection);
+        
+        // 이벤트 리스너 추가
+        titleDiv.querySelector('.delete-list-btn').addEventListener('click', () => deleteList(list.id));
+        memoList.querySelectorAll('.delete-memo-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const listId = parseInt(btn.getAttribute('data-list-id'));
+                const memoId = parseInt(btn.getAttribute('data-memo-id'));
+                deleteMemo(listId, memoId);
+            });
+        });
+        
         container.appendChild(listElement);
     });
 }
@@ -95,12 +141,6 @@ function renderLists() {
 function saveLists() {
     localStorage.setItem('lists', JSON.stringify(lists));
 }
-
-// GitHub 설정
-const GITHUB_TOKEN = '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';
-const GITHUB_USERNAME = 'nomalria';
-const GITHUB_REPO = 'listapps';
-const DATA_FILE = 'lists.json';
 
 // GitHub에 업로드
 async function uploadToGithub() {
