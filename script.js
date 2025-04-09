@@ -366,6 +366,7 @@ function editList(listId) {
         list.title = newTitle.trim();
         saveLists();
         renderLists();
+        updateStats();
     }
 }
 
