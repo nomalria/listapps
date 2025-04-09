@@ -178,9 +178,10 @@ function renderLists() {
     listsContainer.innerHTML = lists.map(list => `
         <div class="list-item" data-list-id="${list.id}">
             <div class="list-title" onclick="toggleMemos('${list.id}')">
-                <span>${list.title}</span>
+                <span class="list-title-text">${list.title}</span>
                 <span class="memo-count">${list.memos.length}/50</span>
                 <div class="button-group">
+                    <button class="edit-btn" onclick="event.stopPropagation(); editList('${list.id}')">편집</button>
                     <button class="delete-btn" onclick="event.stopPropagation(); deleteList('${list.id}')">삭제</button>
                 </div>
             </div>
@@ -192,8 +193,11 @@ function renderLists() {
                 <div class="memo-list">
                     ${list.memos.map(memo => `
                         <div class="memo-item">
-                            <span>${memo.text}</span>
-                            <button class="delete-btn" onclick="deleteMemo('${list.id}', '${memo.id}')">삭제</button>
+                            <span class="memo-text">${memo.text}</span>
+                            <div class="memo-buttons">
+                                <button class="edit-btn" onclick="editMemo('${list.id}', '${memo.id}')">편집</button>
+                                <button class="delete-btn" onclick="deleteMemo('${list.id}', '${memo.id}')">삭제</button>
+                            </div>
                         </div>
                     `).join('')}
                 </div>
@@ -350,6 +354,35 @@ function sortAll() {
     
     saveLists();
     renderLists();
+}
+
+// 방덱 편집
+function editList(listId) {
+    const list = lists.find(l => l.id === listId);
+    if (!list) return;
+    
+    const newTitle = prompt('방덱 이름을 수정하세요:', list.title);
+    if (newTitle && newTitle.trim() !== '') {
+        list.title = newTitle.trim();
+        saveLists();
+        renderLists();
+    }
+}
+
+// 메모 편집
+function editMemo(listId, memoId) {
+    const list = lists.find(l => l.id === listId);
+    if (!list) return;
+    
+    const memo = list.memos.find(m => m.id === memoId);
+    if (!memo) return;
+    
+    const newText = prompt('메모를 수정하세요:', memo.text);
+    if (newText && newText.trim() !== '') {
+        memo.text = newText.trim();
+        saveLists();
+        renderLists();
+    }
 }
 
 // 페이지 로드 시 이벤트 리스너 추가
