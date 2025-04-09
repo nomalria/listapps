@@ -15,9 +15,14 @@
             <button onclick="addNewList()">추가</button>
         </div>
         <div id="lists"></div>
-        <div class="github-buttons">
-            <button onclick="uploadToGithub()">GitHub에 업로드</button>
-            <button onclick="loadFromGithub()">GitHub에서 불러오기</button>
+        <div class="github-section">
+            <div class="input-group">
+                <input type="password" id="githubToken" placeholder="GitHub 토큰 입력">
+            </div>
+            <div class="github-buttons">
+                <button onclick="uploadToGithub()">GitHub에 업로드</button>
+                <button onclick="loadFromGithub()">GitHub에서 불러오기</button>
+            </div>
         </div>
     </div>
     <script>
@@ -25,8 +30,11 @@
         const GITHUB_USERNAME = 'nomalria';
         const GITHUB_REPO = 'listapps';
         const DATA_FILE = 'lists.json';
-        // Netlify 환경 변수에서 토큰 가져오기
-        const GITHUBTOKEN = window.ENV && window.ENV.GITHUBTOKEN ? window.ENV.GITHUBTOKEN : '';
+        
+        // GitHub 토큰 가져오기 함수
+        function getGithubToken() {
+            return document.getElementById('githubToken').value;
+        }
     </script>
     <script src="script.js"></script>
 </body>

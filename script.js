@@ -123,14 +123,17 @@ function saveLists() {
 // GitHub에 업로드
 window.uploadToGithub = async function() {
     try {
-        // GitHub API 응답 확인을 위한 테스트
-        console.log('토큰 확인:', GITHUBTOKEN ? '토큰 있음' : '토큰 없음');
+        const token = getGithubToken();
+        if (!token) {
+            alert('GitHub 토큰을 입력해주세요.');
+            return;
+        }
         
         const data = JSON.stringify(lists, null, 2);
         const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/${DATA_FILE}`, {
             method: 'PUT',
             headers: {
-                'Authorization': `token ${GITHUBTOKEN}`,
+                'Authorization': `token ${token}`,
                 'Content-Type': 'application/json',
                 'Accept': 'application/vnd.github.v3+json'
             },
@@ -159,11 +162,15 @@ window.uploadToGithub = async function() {
 // GitHub에서 불러오기
 window.loadFromGithub = async function() {
     try {
-        console.log('토큰 확인:', GITHUBTOKEN ? '토큰 있음' : '토큰 없음');
+        const token = getGithubToken();
+        if (!token) {
+            alert('GitHub 토큰을 입력해주세요.');
+            return;
+        }
         
         const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/${DATA_FILE}`, {
             headers: {
-                'Authorization': `token ${GITHUBTOKEN}`,
+                'Authorization': `token ${token}`,
                 'Accept': 'application/vnd.github.v3+json'
             }
         });
