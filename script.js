@@ -123,12 +123,16 @@ function saveLists() {
 // GitHub에 업로드
 window.uploadToGithub = async function() {
     try {
+        // GitHub API 응답 확인을 위한 테스트
+        console.log('토큰 확인:', GITHUBTOKEN ? '토큰 있음' : '토큰 없음');
+        
         const data = JSON.stringify(lists, null, 2);
         const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/${DATA_FILE}`, {
             method: 'PUT',
             headers: {
-                'Authorization': `Bearer ${GITHUBTOKEN}`,
+                'Authorization': `token ${GITHUBTOKEN}`,
                 'Content-Type': 'application/json',
+                'Accept': 'application/vnd.github.v3+json'
             },
             body: JSON.stringify({
                 message: 'Update lists data',
@@ -143,6 +147,8 @@ window.uploadToGithub = async function() {
             throw new Error(`업로드 실패 (${response.status}: ${errorData.message})`);
         }
         
+        const responseData = await response.json();
+        console.log('업로드 성공:', responseData);
         alert('GitHub에 성공적으로 업로드되었습니다.');
     } catch (error) {
         console.error('Error:', error);
@@ -153,9 +159,12 @@ window.uploadToGithub = async function() {
 // GitHub에서 불러오기
 window.loadFromGithub = async function() {
     try {
+        console.log('토큰 확인:', GITHUBTOKEN ? '토큰 있음' : '토큰 없음');
+        
         const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/${DATA_FILE}`, {
             headers: {
-                'Authorization': `Bearer ${GITHUBTOKEN}`
+                'Authorization': `token ${GITHUBTOKEN}`,
+                'Accept': 'application/vnd.github.v3+json'
             }
         });
 
@@ -166,6 +175,7 @@ window.loadFromGithub = async function() {
         }
 
         const data = await response.json();
+        console.log('데이터 불러오기 성공:', data);
         const content = decodeURIComponent(escape(atob(data.content)));
         lists = JSON.parse(content);
         saveLists();
