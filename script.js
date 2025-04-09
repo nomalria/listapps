@@ -270,8 +270,35 @@ async function uploadToGithub() {
             return;
         }
         
+        // 먼저 기존 파일의 sha 값을 가져옵니다
+        let sha = null;
+        try {
+            const checkResponse = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/${DATA_FILE}`, {
+                headers: {
+                    'Authorization': `token ${token}`
+                }
+            });
+            
+            if (checkResponse.ok) {
+                const fileData = await checkResponse.json();
+                sha = fileData.sha;
+            }
+        } catch (error) {
+            console.log('기존 파일이 없거나 접근할 수 없습니다. 새로 생성합니다.');
+        }
+        
         const lists = JSON.parse(localStorage.getItem('lists') || '[]');
         const content = btoa(JSON.stringify(lists, null, 2));
+        
+        const requestBody = {
+            message: 'Update lists data',
+            content: content
+        };
+        
+        // sha 값이 있으면 추가합니다
+        if (sha) {
+            requestBody.sha = sha;
+        }
         
         const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/${DATA_FILE}`, {
             method: 'PUT',
@@ -279,20 +306,19 @@ async function uploadToGithub() {
                 'Authorization': `token ${token}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                message: 'Update lists data',
-                content: content
-            })
+            body: JSON.stringify(requestBody)
         });
 
         if (!response.ok) {
-            throw new Error('GitHub 업로드 실패');
+            const errorData = await response.json();
+            console.error('GitHub API Error:', errorData);
+            throw new Error(`업로드 실패 (${response.status}: ${errorData.message})`);
         }
 
         alert('GitHub에 성공적으로 업로드되었습니다!');
     } catch (error) {
         console.error('GitHub 업로드 오류:', error);
-        alert('GitHub 업로드 중 오류가 발생했습니다.');
+        alert('GitHub 업로드 중 오류가 발생했습니다: ' + error.message);
     }
 }
 
