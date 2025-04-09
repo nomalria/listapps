@@ -198,11 +198,24 @@ function renderLists() {
         // 목록 제목과 버튼들
         const titleDiv = document.createElement('div');
         titleDiv.className = 'list-title';
-        titleDiv.innerHTML = `
-            <span>${list.title}</span>
+        titleDiv.onclick = (e) => {
+            // 버튼 클릭 시에는 토글하지 않음
+            if (e.target.tagName === 'BUTTON') return;
+            listElement.classList.toggle('expanded');
+        };
+        
+        const titleSpan = document.createElement('span');
+        titleSpan.textContent = list.title;
+        
+        const buttonGroup = document.createElement('div');
+        buttonGroup.className = 'button-group';
+        buttonGroup.innerHTML = `
             <button class="edit-list-btn" onclick="editListTitle(${list.id})">편집</button>
             <button class="delete-list-btn" onclick="deleteList(${list.id})">삭제</button>
         `;
+        
+        titleDiv.appendChild(titleSpan);
+        titleDiv.appendChild(buttonGroup);
         
         // 메모 섹션
         const memoSection = document.createElement('div');
@@ -235,11 +248,19 @@ function renderLists() {
             const memoItem = document.createElement('li');
             memoItem.className = 'memo-item';
             memoItem.setAttribute('data-memo-id', memo.id);
-            memoItem.innerHTML = `
-                <span>${memo.text}</span>
+            
+            const memoSpan = document.createElement('span');
+            memoSpan.textContent = memo.text;
+            
+            const memoButtonGroup = document.createElement('div');
+            memoButtonGroup.className = 'button-group';
+            memoButtonGroup.innerHTML = `
                 <button class="edit-memo-btn" onclick="editMemoText(${list.id}, ${memo.id})">편집</button>
                 <button class="delete-memo-btn" onclick="deleteMemo(${list.id}, ${memo.id})">삭제</button>
             `;
+            
+            memoItem.appendChild(memoSpan);
+            memoItem.appendChild(memoButtonGroup);
             memoList.appendChild(memoItem);
         });
         
