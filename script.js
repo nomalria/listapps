@@ -129,7 +129,36 @@ window.uploadToGithub = async function() {
             return;
         }
         
+        // 먼저 기존 파일의 sha 값을 가져옵니다
+        let sha = null;
+        try {
+            const checkResponse = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/${DATA_FILE}`, {
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+            
+            if (checkResponse.ok) {
+                const fileData = await checkResponse.json();
+                sha = fileData.sha;
+            }
+        } catch (error) {
+            console.log('기존 파일이 없거나 접근할 수 없습니다. 새로 생성합니다.');
+        }
+        
         const data = JSON.stringify(lists, null, 2);
+        const requestBody = {
+            message: 'Update lists data',
+            content: btoa(unescape(encodeURIComponent(data))),
+            branch: 'main'
+        };
+        
+        // sha 값이 있으면 추가합니다
+        if (sha) {
+            requestBody.sha = sha;
+        }
+        
         const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/${DATA_FILE}`, {
             method: 'PUT',
             headers: {
@@ -137,11 +166,7 @@ window.uploadToGithub = async function() {
                 'Content-Type': 'application/json',
                 'Accept': 'application/vnd.github.v3+json'
             },
-            body: JSON.stringify({
-                message: 'Update lists data',
-                content: btoa(unescape(encodeURIComponent(data))),
-                branch: 'main'
-            })
+            body: JSON.stringify(requestBody)
         });
 
         if (!response.ok) {
