@@ -214,6 +214,28 @@ button:hover {
     border-bottom: none;
 }
 
+/* 정렬 섹션 */
+.sort-section {
+    margin: 20px 0;
+    display: flex;
+    gap: 10px;
+}
+
+.sort-section button {
+    padding: 10px 20px;
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+.sort-section button:hover {
+    background-color: #1976D2;
+}
+
 /* 반응형 디자인 */
 @media (max-width: 600px) {
     .container {

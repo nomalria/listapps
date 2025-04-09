@@ -47,6 +47,12 @@
             <div id="searchResults" class="search-results"></div>
         </div>
         
+        <!-- 정렬 버튼 -->
+        <div class="sort-section">
+            <button id="sortListsBtn">방덱 목록 정렬</button>
+            <button id="sortMemosBtn">메모 내용 정렬</button>
+        </div>
+        
         <!-- 방덱 목록 섹션 -->
         <div id="lists" class="lists-container"></div>
     </div>
@@ -100,6 +106,10 @@
                     }
                 }
             });
+            
+            // 정렬 버튼 이벤트 리스너
+            document.getElementById('sortListsBtn').addEventListener('click', sortLists);
+            document.getElementById('sortMemosBtn').addEventListener('click', sortMemos);
         });
     </script>
     <script src="script.js"></script>

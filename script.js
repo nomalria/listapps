@@ -283,6 +283,22 @@ async function loadFromGithub() {
     }
 }
 
+// 방덱 목록 정렬
+function sortLists() {
+    lists.sort((a, b) => a.title.localeCompare(b.title, 'ko'));
+    saveLists();
+    renderLists();
+}
+
+// 메모 내용 정렬
+function sortMemos() {
+    lists.forEach(list => {
+        list.memos.sort((a, b) => a.text.localeCompare(b.text, 'ko'));
+    });
+    saveLists();
+    renderLists();
+}
+
 // 페이지 로드 시 이벤트 리스너 추가
 document.addEventListener('DOMContentLoaded', function() {
     loadLists();
