@@ -5,147 +5,158 @@
 }
 
 body {
-    font-family: 'Arial', sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding: 20px;
-    background-color: #e8f5e9;
+    background-color: #E8F5E9;
+    color: #333;
 }
 
 .container {
-    max-width: 800px;
+    max-width: 700px;
     margin: 0 auto;
-    background-color: white;
     padding: 20px;
+    background-color: white;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
     text-align: center;
-    color: #333;
+    color: #2E7D32;
+    margin-bottom: 30px;
+}
+
+/* 통계 섹션 */
+.stats-section {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #F1F8E9;
+    border-radius: 6px;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-label {
+    font-weight: bold;
+    color: #2E7D32;
+}
+
+.stat-value {
+    font-size: 1.2em;
+    margin-left: 5px;
+}
+
+/* 검색 섹션 */
+.search-section {
     margin-bottom: 20px;
 }
 
+.search-input {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #4CAF50;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+.search-results {
+    margin-top: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    display: none;
+}
+
+/* GitHub 섹션 */
+.github-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #F5F5F5;
+    border-radius: 6px;
+}
+
 .input-group {
-    display: flex;
     margin-bottom: 15px;
-    gap: 10px;
 }
 
 input[type="text"],
 input[type="password"] {
-    flex: 1;
-    padding: 8px;
+    width: calc(100% - 100px);
+    padding: 10px;
     border: 1px solid #ddd;
     border-radius: 4px;
-    font-size: 14px;
+    font-size: 16px;
 }
 
 button {
-    padding: 8px 15px;
-    background-color: #4CAF50;
-    color: white;
+    padding: 10px 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
     font-size: 14px;
-}
-
-button:hover {
-    background-color: #45a049;
-}
-
-.list-item {
-    background-color: #f9f9f9;
-    padding: 15px;
-    margin-bottom: 15px;
-    border-radius: 4px;
-    border: 1px solid #eee;
-}
-
-.list-title {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-    background-color: #f8f9fa;
-    border-radius: 4px;
-    margin-bottom: 10px;
-    cursor: pointer;
-}
-
-.list-title span {
-    flex-grow: 1;
-}
-
-.list-title .button-group {
-    display: flex;
-    gap: 5px;
-}
-
-.edit-input {
-    padding: 5px;
-    margin-right: 5px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-}
-
-.edit-list-btn, .edit-memo-btn {
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-right: 5px;
-}
-
-.sort-button {
-    background-color: #2196F3;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    margin: 5px 0;
-}
-
-.delete-list-btn, .delete-memo-btn {
-    background-color: #f44336;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 4px;
-    cursor: pointer;
     transition: background-color 0.3s;
 }
 
-.delete-list-btn:hover,
-.delete-memo-btn:hover {
-    background-color: #da190b;
+button:hover {
+    opacity: 0.9;
+}
+
+#addListBtn {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.edit-btn {
+    background-color: #2196F3;
+    color: white;
+}
+
+.delete-btn {
+    background-color: #ff4444;
+    color: white;
+}
+
+/* 방덱 목록 */
+.lists-container {
+    margin-top: 20px;
+}
+
+.list-item {
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+.list-title {
+    padding: 15px;
+    background-color: #F1F8E9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
 }
 
 .memo-section {
+    padding: 15px;
     display: none;
-    margin-top: 10px;
-    padding: 10px;
-    background-color: #f8f9fa;
-    border-radius: 4px;
 }
 
-.list-item.expanded .memo-section {
+.memo-section.expanded {
     display: block;
 }
 
-.memo-input {
-    width: 100%;
-    margin-bottom: 10px;
-}
-
-.memo-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+.memo-count {
+    font-size: 12px;
+    color: #666;
+    margin-left: 10px;
 }
 
 .memo-item {
@@ -153,59 +164,32 @@ button:hover {
     justify-content: space-between;
     align-items: center;
     padding: 8px;
-    margin: 5px 0;
-    background-color: #fff;
-    border-radius: 4px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-bottom: 1px solid #eee;
 }
 
-.memo-item span {
-    flex-grow: 1;
+.memo-item:last-child {
+    border-bottom: none;
 }
 
-.memo-item .button-group {
-    display: flex;
-    gap: 5px;
-}
-
-.github-section {
-    margin-bottom: 20px;
-    padding: 15px;
-    background-color: #f8f9fa;
-    border-radius: 4px;
-    border: 1px solid #e9ecef;
-}
-
-.github-buttons {
-    display: flex;
-    gap: 10px;
-    margin-top: 10px;
-}
-
-.github-buttons button {
-    flex: 1;
-    background-color: #007bff;
-}
-
-.github-buttons button:hover {
-    background-color: #0056b3;
-}
-
-/* 모바일 반응형 */
+/* 반응형 디자인 */
 @media (max-width: 600px) {
     .container {
         padding: 10px;
     }
     
-    .input-group {
+    .stats-section {
         flex-direction: column;
+        gap: 10px;
+    }
+    
+    input[type="text"],
+    input[type="password"] {
+        width: 100%;
+        margin-bottom: 10px;
     }
     
     button {
         width: 100%;
-    }
-    
-    .github-section {
-        flex-direction: column;
+        margin-bottom: 5px;
     }
 } 

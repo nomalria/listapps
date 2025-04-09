@@ -3,28 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>리스트 관리</title>
+    <title>방덱 목록 관리</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>
     <div class="container">
-        <h1>리스트 관리</h1>
+        <h1>방덱 목록 관리</h1>
+        
+        <!-- 통계 섹션 -->
+        <div class="stats-section">
+            <div class="stat-item">
+                <span class="stat-label">4방덱:</span>
+                <span id="stat-4deck" class="stat-value">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">5방덱:</span>
+                <span id="stat-5deck" class="stat-value">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">기타:</span>
+                <span id="stat-other" class="stat-value">0</span>
+            </div>
+        </div>
+        
+        <!-- 검색 섹션 -->
+        <div class="search-section">
+            <input type="text" id="searchInput" placeholder="방덱 검색..." class="search-input">
+            <div id="searchResults" class="search-results"></div>
+        </div>
+        
+        <!-- GitHub 섹션 -->
         <div class="github-section">
             <div class="input-group">
                 <input type="password" id="githubToken" placeholder="GitHub 토큰 입력">
             </div>
             <div class="github-buttons">
-                <button onclick="uploadToGithub()">GitHub에 업로드</button>
-                <button onclick="loadFromGithub()">GitHub에서 불러오기</button>
+                <button id="uploadGithubBtn">GitHub에 업로드</button>
+                <button id="loadGithubBtn">GitHub에서 불러오기</button>
             </div>
         </div>
+        
+        <!-- 방덱 추가 섹션 -->
         <div class="input-group">
-            <input type="text" id="newList" placeholder="새 리스트 이름">
-            <button onclick="addNewList()">추가</button>
+            <input type="text" id="newList" placeholder="새 방덱 추가" class="deck-input">
+            <button id="addListBtn">추가</button>
         </div>
-        <div id="lists"></div>
+        
+        <!-- 방덱 목록 섹션 -->
+        <div id="lists" class="lists-container"></div>
     </div>
+    
     <script>
         // GitHub 설정
         const GITHUB_USERNAME = 'nomalria';
@@ -43,6 +72,23 @@
             // GitHub 토큰 입력 필드에 이벤트 리스너 추가
             document.getElementById('githubToken').addEventListener('input', function() {
                 window.GITHUBTOKEN = this.value;
+            });
+            
+            // 검색 입력 필드에 이벤트 리스너 추가
+            document.getElementById('searchInput').addEventListener('input', function() {
+                const query = this.value.trim();
+                if (query) {
+                    searchLists(query);
+                } else {
+                    document.getElementById('searchResults').innerHTML = '';
+                }
+            });
+            
+            // Enter 키 이벤트 처리
+            document.getElementById('newList').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addNewList();
+                }
             });
         });
     </script>
