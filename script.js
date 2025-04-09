@@ -45,7 +45,7 @@ function searchLists(query) {
 
     if (matchingWords.length > 0) {
         searchResults.innerHTML = matchingWords.map(word => `
-            <div class="list-item" onclick="selectWord('${word}')">
+            <div class="list-item" data-word="${word}" onclick="selectWord('${word}')">
                 <span>${word}</span>
             </div>
         `).join('');
@@ -275,7 +275,7 @@ async function loadFromGithub() {
     }
 }
 
-// 이벤트 리스너 등록
+// 페이지 로드 시 이벤트 리스너 추가
 document.addEventListener('DOMContentLoaded', function() {
     loadLists();
     
@@ -286,6 +286,35 @@ document.addEventListener('DOMContentLoaded', function() {
             searchLists(query);
         } else {
             document.getElementById('searchResults').innerHTML = '';
+        }
+    });
+    
+    // 탭 키 이벤트 처리
+    document.getElementById('searchInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            const searchResults = document.getElementById('searchResults');
+            const firstResult = searchResults.querySelector('.list-item');
+            if (firstResult) {
+                const word = firstResult.getAttribute('data-word');
+                selectWord(word);
+            }
+        }
+    });
+    
+    // 스페이스바 이벤트 처리
+    document.getElementById('searchInput').addEventListener('keydown', function(e) {
+        if (e.key === ' ') {
+            const query = this.value.trim();
+            if (query) {
+                const searchResults = document.getElementById('searchResults');
+                const firstResult = searchResults.querySelector('.list-item');
+                if (firstResult) {
+                    e.preventDefault();
+                    const word = firstResult.getAttribute('data-word');
+                    selectWord(word);
+                }
+            }
         }
     });
     
