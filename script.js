@@ -181,7 +181,7 @@ function renderLists() {
                 <span class="list-title-text">${list.title}</span>
                 <span class="memo-count">${list.memos.length}/50</span>
                 <div class="button-group">
-                    <button class="edit-btn" onclick="event.stopPropagation(); editList('${list.id}')">편집</button>
+                    <button class="edit-btn" onclick="event.stopPropagation(); startEditList('${list.id}')">편집</button>
                     <button class="delete-btn" onclick="event.stopPropagation(); deleteList('${list.id}')">삭제</button>
                 </div>
             </div>
@@ -195,7 +195,7 @@ function renderLists() {
                         <div class="memo-item" data-memo-id="${memo.id}">
                             <span class="memo-text">${memo.text}</span>
                             <div class="memo-buttons">
-                                <button class="edit-btn" onclick="event.stopPropagation(); editMemo('${list.id}', '${memo.id}')">편집</button>
+                                <button class="edit-btn" onclick="event.stopPropagation(); startEditMemo('${list.id}', '${memo.id}')">편집</button>
                                 <button class="delete-btn" onclick="event.stopPropagation(); deleteMemo('${list.id}', '${memo.id}')">삭제</button>
                             </div>
                         </div>
@@ -356,8 +356,8 @@ function sortAll() {
     renderLists();
 }
 
-// 방덱 편집
-function editList(listId) {
+// 방덱 편집 시작
+function startEditList(listId) {
     const list = lists.find(l => l.id === listId);
     if (!list) return;
     
@@ -367,13 +367,30 @@ function editList(listId) {
     const originalTitle = titleElement.textContent;
     
     // 편집 UI 생성
-    titleElement.innerHTML = `
+    const editContainer = document.createElement('div');
+    editContainer.className = 'edit-container';
+    editContainer.innerHTML = `
         <input type="text" class="edit-input" value="${originalTitle}" id="edit-title-${listId}">
         <div class="edit-buttons">
-            <button class="save-btn" onclick="event.stopPropagation(); saveListEdit('${listId}')">저장</button>
-            <button class="cancel-btn" onclick="event.stopPropagation(); cancelListEdit('${listId}', '${originalTitle}')">취소</button>
+            <button class="save-btn" id="save-list-${listId}">저장</button>
+            <button class="cancel-btn" id="cancel-list-${listId}">취소</button>
         </div>
     `;
+    
+    // 기존 내용 대체
+    titleElement.innerHTML = '';
+    titleElement.appendChild(editContainer);
+    
+    // 이벤트 리스너 추가
+    document.getElementById(`save-list-${listId}`).addEventListener('click', function(e) {
+        e.stopPropagation();
+        saveListEdit(listId);
+    });
+    
+    document.getElementById(`cancel-list-${listId}`).addEventListener('click', function(e) {
+        e.stopPropagation();
+        cancelListEdit(listId, originalTitle);
+    });
     
     // 입력 필드에 포커스
     setTimeout(() => {
@@ -404,8 +421,8 @@ function cancelListEdit(listId, originalTitle) {
     renderLists();
 }
 
-// 메모 편집
-function editMemo(listId, memoId) {
+// 메모 편집 시작
+function startEditMemo(listId, memoId) {
     const list = lists.find(l => l.id === listId);
     if (!list) return;
     
@@ -420,13 +437,30 @@ function editMemo(listId, memoId) {
     const originalText = memoTextElement.textContent;
     
     // 편집 UI 생성
-    memoElement.innerHTML = `
+    const editContainer = document.createElement('div');
+    editContainer.className = 'edit-container';
+    editContainer.innerHTML = `
         <input type="text" class="edit-input" value="${originalText}" id="edit-memo-${memoId}">
         <div class="edit-buttons">
-            <button class="save-btn" onclick="event.stopPropagation(); saveMemoEdit('${listId}', '${memoId}')">저장</button>
-            <button class="cancel-btn" onclick="event.stopPropagation(); cancelMemoEdit('${listId}', '${memoId}', '${originalText}')">취소</button>
+            <button class="save-btn" id="save-memo-${memoId}">저장</button>
+            <button class="cancel-btn" id="cancel-memo-${memoId}">취소</button>
         </div>
     `;
+    
+    // 기존 내용 대체
+    memoElement.innerHTML = '';
+    memoElement.appendChild(editContainer);
+    
+    // 이벤트 리스너 추가
+    document.getElementById(`save-memo-${memoId}`).addEventListener('click', function(e) {
+        e.stopPropagation();
+        saveMemoEdit(listId, memoId);
+    });
+    
+    document.getElementById(`cancel-memo-${memoId}`).addEventListener('click', function(e) {
+        e.stopPropagation();
+        cancelMemoEdit(listId, memoId, originalText);
+    });
     
     // 입력 필드에 포커스
     setTimeout(() => {

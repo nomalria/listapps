@@ -261,12 +261,19 @@ button:hover {
     }
 }
 
+.edit-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
 .edit-input {
     padding: 8px;
     border: 1px solid #4CAF50;
     border-radius: 4px;
     width: 100%;
     margin-bottom: 5px;
+    font-size: 14px;
 }
 
 .edit-buttons {
