@@ -5,6 +5,9 @@ let currentListId = null;
 // 삭제 확인을 위한 타이머 객체
 const deleteTimers = {};
 
+// 현재 선택된 추천문구 인덱스
+let selectedIndex = -1;
+
 // 방덱 목록 불러오기
 function loadLists() {
     const savedLists = localStorage.getItem('lists');
@@ -28,6 +31,7 @@ function searchLists(query) {
     
     if (!query) {
         searchResults.innerHTML = '';
+        selectedIndex = -1;
         return;
     }
 
@@ -49,13 +53,17 @@ function searchLists(query) {
     );
 
     if (matchingWords.length > 0) {
-        searchResults.innerHTML = matchingWords.map(word => `
-            <div class="list-item" data-word="${word}" onclick="selectWord('${word}')">
+        searchResults.innerHTML = matchingWords.map((word, index) => `
+            <div class="list-item ${index === selectedIndex ? 'selected' : ''}" 
+                 data-word="${word}" 
+                 data-index="${index}"
+                 onclick="selectWord('${word}')">
                 <span>${word}</span>
             </div>
         `).join('');
     } else {
         searchResults.innerHTML = '';
+        selectedIndex = -1;
     }
 }
 
@@ -73,6 +81,7 @@ function selectWord(word) {
     
     searchInput.value = currentWords.join(' ');
     document.getElementById('searchResults').innerHTML = '';
+    selectedIndex = -1;
 }
 
 // 방덱이 동일한지 확인하는 함수
@@ -310,6 +319,7 @@ document.addEventListener('DOMContentLoaded', function() {
             searchLists(query);
         } else {
             document.getElementById('searchResults').innerHTML = '';
+            selectedIndex = -1;
         }
     });
     
@@ -318,10 +328,17 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.key === 'Tab') {
             e.preventDefault();
             const searchResults = document.getElementById('searchResults');
-            const firstResult = searchResults.querySelector('.list-item');
-            if (firstResult) {
-                const word = firstResult.getAttribute('data-word');
-                selectWord(word);
+            const items = searchResults.querySelectorAll('.list-item');
+            
+            if (items.length > 0) {
+                selectedIndex = (selectedIndex + 1) % items.length;
+                items.forEach((item, index) => {
+                    if (index === selectedIndex) {
+                        item.classList.add('selected');
+                    } else {
+                        item.classList.remove('selected');
+                    }
+                });
             }
         }
     });
@@ -329,15 +346,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // 스페이스바 이벤트 처리
     document.getElementById('searchInput').addEventListener('keydown', function(e) {
         if (e.key === ' ') {
-            const query = this.value.trim();
-            if (query) {
-                const searchResults = document.getElementById('searchResults');
-                const firstResult = searchResults.querySelector('.list-item');
-                if (firstResult) {
-                    e.preventDefault();
-                    const word = firstResult.getAttribute('data-word');
-                    selectWord(word);
-                }
+            const searchResults = document.getElementById('searchResults');
+            const selectedItem = searchResults.querySelector('.list-item.selected');
+            
+            if (selectedItem) {
+                e.preventDefault();
+                const word = selectedItem.getAttribute('data-word');
+                selectWord(word);
             }
         }
     });

@@ -121,6 +121,11 @@ h1 {
     font-size: 14px;
 }
 
+.search-results .list-item.selected {
+    background-color: #e3f2fd;
+    border-left: 4px solid #2196F3;
+}
+
 /* GitHub 섹션 */
 .github-section {
     margin-bottom: 20px;
