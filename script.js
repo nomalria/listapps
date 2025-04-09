@@ -1,14 +1,8 @@
 // 로컬 스토리지에서 데이터 로드
 let lists = JSON.parse(localStorage.getItem('lists')) || [];
 
-// DOM이 로드된 후 실행
-document.addEventListener('DOMContentLoaded', () => {
-    // 초기 목록 렌더링
-    renderLists();
-});
-
-// 새 목록 추가
-function addNewList() {
+// 전역 함수 선언
+window.addNewList = function() {
     const titleInput = document.getElementById('newList');
     const title = titleInput.value.trim();
     
@@ -24,10 +18,9 @@ function addNewList() {
         renderLists();
         titleInput.value = '';
     }
-}
+};
 
-// 메모 추가
-function addMemo(listId) {
+window.addMemo = function(listId) {
     const memoInput = document.getElementById(`memo-input-${listId}`);
     const memoText = memoInput.value.trim();
     
@@ -43,28 +36,28 @@ function addMemo(listId) {
             memoInput.value = '';
         }
     }
-}
+};
 
-// 목록 삭제
-function deleteList(listId) {
+window.deleteList = function(listId) {
     lists = lists.filter(list => list.id !== listId);
     saveLists();
     renderLists();
-}
+};
 
-// 메모 삭제
-function deleteMemo(listId, memoId) {
+window.deleteMemo = function(listId, memoId) {
     const list = lists.find(l => l.id === listId);
     if (list) {
         list.memos = list.memos.filter(memo => memo.id !== memoId);
         saveLists();
         renderLists();
     }
-}
+};
 
 // 목록 렌더링
 function renderLists() {
     const container = document.getElementById('lists');
+    if (!container) return;
+    
     container.innerHTML = '';
     
     lists.forEach(list => {
@@ -76,7 +69,7 @@ function renderLists() {
         titleDiv.className = 'list-title';
         titleDiv.innerHTML = `
             ${list.title}
-            <button class="delete-list-btn" data-id="${list.id}">삭제</button>
+            <button class="delete-list-btn" onclick="deleteList(${list.id})">삭제</button>
         `;
         
         // 메모 섹션
@@ -93,7 +86,7 @@ function renderLists() {
         // 메모 추가 버튼
         const addMemoBtn = document.createElement('button');
         addMemoBtn.textContent = '메모 추가';
-        addMemoBtn.addEventListener('click', () => addMemo(list.id));
+        addMemoBtn.onclick = () => addMemo(list.id);
         
         // 메모 목록
         const memoList = document.createElement('ul');
@@ -104,7 +97,7 @@ function renderLists() {
             memoItem.className = 'memo-item';
             memoItem.innerHTML = `
                 ${memo.text}
-                <button class="delete-memo-btn" data-list-id="${list.id}" data-memo-id="${memo.id}">삭제</button>
+                <button class="delete-memo-btn" onclick="deleteMemo(${list.id}, ${memo.id})">삭제</button>
             `;
             memoList.appendChild(memoItem);
         });
@@ -118,16 +111,6 @@ function renderLists() {
         listElement.appendChild(titleDiv);
         listElement.appendChild(memoSection);
         
-        // 이벤트 리스너 추가
-        titleDiv.querySelector('.delete-list-btn').addEventListener('click', () => deleteList(list.id));
-        memoList.querySelectorAll('.delete-memo-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const listId = parseInt(btn.getAttribute('data-list-id'));
-                const memoId = parseInt(btn.getAttribute('data-memo-id'));
-                deleteMemo(listId, memoId);
-            });
-        });
-        
         container.appendChild(listElement);
     });
 }
@@ -138,7 +121,7 @@ function saveLists() {
 }
 
 // GitHub에 업로드
-async function uploadToGithub() {
+window.uploadToGithub = async function() {
     try {
         const data = JSON.stringify(lists, null, 2);
         const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/${DATA_FILE}`, {
@@ -163,10 +146,10 @@ async function uploadToGithub() {
         console.error('Error:', error);
         alert('GitHub 업로드 중 오류가 발생했습니다.');
     }
-}
+};
 
 // GitHub에서 불러오기
-async function loadFromGithub() {
+window.loadFromGithub = async function() {
     try {
         const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/${DATA_FILE}`, {
             headers: {
@@ -188,4 +171,10 @@ async function loadFromGithub() {
         console.error('Error:', error);
         alert('GitHub에서 데이터를 불러오는 중 오류가 발생했습니다.');
     }
-} 
+};
+
+// DOM이 로드된 후 실행
+document.addEventListener('DOMContentLoaded', () => {
+    // 초기 목록 렌더링
+    renderLists();
+}); 
