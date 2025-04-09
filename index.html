@@ -20,13 +20,12 @@
             <button onclick="loadFromGithub()">GitHub에서 불러오기</button>
         </div>
     </div>
-    <script src="config.js"></script>
     <script>
         // GitHub 설정
         const GITHUB_USERNAME = 'nomalria';
         const GITHUB_REPO = 'listapps';
         const DATA_FILE = 'lists.json';
-        // Netlify 환경 변수
+        // Netlify 환경 변수에서 토큰 가져오기
         const GITHUBTOKEN = window.ENV && window.ENV.GITHUBTOKEN ? window.ENV.GITHUBTOKEN : '';
     </script>
     <script src="script.js"></script>
