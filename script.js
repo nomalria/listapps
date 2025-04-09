@@ -31,6 +31,10 @@ function searchLists(query) {
         return;
     }
 
+    // 현재 입력된 단어들을 가져옴
+    const currentWords = query.split(' ').filter(w => w);
+    const lastWord = currentWords[currentWords.length - 1];
+
     // 모든 방덱의 단어들을 추출
     const allWords = new Set();
     lists.forEach(list => {
@@ -38,9 +42,10 @@ function searchLists(query) {
         words.forEach(word => allWords.add(word));
     });
 
-    // 검색어와 일치하는 단어들 찾기
+    // 검색어와 일치하는 단어들 찾기 (마지막 단어와 일치하는 것만)
     const matchingWords = Array.from(allWords).filter(word => 
-        word.toLowerCase().includes(query.toLowerCase())
+        word.toLowerCase().includes(lastWord.toLowerCase()) &&
+        !currentWords.includes(word) // 이미 입력된 단어는 제외
     );
 
     if (matchingWords.length > 0) {
@@ -58,10 +63,15 @@ function searchLists(query) {
 function selectWord(word) {
     const searchInput = document.getElementById('searchInput');
     const currentWords = searchInput.value.trim().split(' ').filter(w => w);
-    if (!currentWords.includes(word)) {
+    
+    // 마지막 단어를 선택한 단어로 교체
+    if (currentWords.length > 0) {
+        currentWords[currentWords.length - 1] = word;
+    } else {
         currentWords.push(word);
-        searchInput.value = currentWords.join(' ');
     }
+    
+    searchInput.value = currentWords.join(' ');
     document.getElementById('searchResults').innerHTML = '';
 }
 
