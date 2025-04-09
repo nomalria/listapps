@@ -240,6 +240,12 @@ async function uploadToGithub() {
     }
     
     try {
+        // JSON 문자열을 UTF-8로 인코딩
+        const jsonString = JSON.stringify(lists, null, 2);
+        const encoder = new TextEncoder();
+        const bytes = encoder.encode(jsonString);
+        const base64Content = btoa(String.fromCharCode.apply(null, bytes));
+        
         const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/${DATA_FILE}`, {
             method: 'PUT',
             headers: {
@@ -248,7 +254,7 @@ async function uploadToGithub() {
             },
             body: JSON.stringify({
                 message: 'Update lists data',
-                content: btoa(JSON.stringify(lists, null, 2))
+                content: base64Content
             })
         });
         
@@ -280,10 +286,31 @@ async function loadFromGithub() {
         if (response.ok) {
             const data = await response.json();
             const content = atob(data.content);
-            lists = JSON.parse(content);
-            saveLists();
-            renderLists();
-            alert('GitHub에서 데이터를 불러왔습니다.');
+            
+            try {
+                // JSON 파싱 시도
+                lists = JSON.parse(content);
+                saveLists();
+                renderLists();
+                alert('GitHub에서 데이터를 불러왔습니다.');
+            } catch (parseError) {
+                console.error('JSON 파싱 오류:', parseError);
+                
+                // 인코딩 문제 해결 시도
+                const decoder = new TextDecoder('utf-8');
+                const bytes = Uint8Array.from(atob(data.content), c => c.charCodeAt(0));
+                const decodedContent = decoder.decode(bytes);
+                
+                try {
+                    lists = JSON.parse(decodedContent);
+                    saveLists();
+                    renderLists();
+                    alert('GitHub에서 데이터를 불러왔습니다.');
+                } catch (secondError) {
+                    console.error('두 번째 파싱 시도 실패:', secondError);
+                    alert('데이터를 불러오는 중 오류가 발생했습니다. 인코딩 문제일 수 있습니다.');
+                }
+            }
         } else {
             throw new Error('데이터 불러오기 실패');
         }
