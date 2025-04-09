@@ -259,4 +259,45 @@ button:hover {
         width: 100%;
         margin-bottom: 5px;
     }
+}
+
+.edit-input {
+    padding: 8px;
+    border: 1px solid #4CAF50;
+    border-radius: 4px;
+    width: 100%;
+    margin-bottom: 5px;
+}
+
+.edit-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.save-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.save-btn:hover {
+    background-color: #45a049;
+}
+
+.cancel-btn {
+    background-color: #f44336;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.cancel-btn:hover {
+    background-color: #d32f2f;
 } 

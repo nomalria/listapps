@@ -192,11 +192,11 @@ function renderLists() {
                 </div>
                 <div class="memo-list">
                     ${list.memos.map(memo => `
-                        <div class="memo-item">
+                        <div class="memo-item" data-memo-id="${memo.id}">
                             <span class="memo-text">${memo.text}</span>
                             <div class="memo-buttons">
-                                <button class="edit-btn" onclick="editMemo('${list.id}', '${memo.id}')">편집</button>
-                                <button class="delete-btn" onclick="deleteMemo('${list.id}', '${memo.id}')">삭제</button>
+                                <button class="edit-btn" onclick="event.stopPropagation(); editMemo('${list.id}', '${memo.id}')">편집</button>
+                                <button class="delete-btn" onclick="event.stopPropagation(); deleteMemo('${list.id}', '${memo.id}')">삭제</button>
                             </div>
                         </div>
                     `).join('')}
@@ -361,13 +361,47 @@ function editList(listId) {
     const list = lists.find(l => l.id === listId);
     if (!list) return;
     
-    const newTitle = prompt('방덱 이름을 수정하세요:', list.title);
-    if (newTitle && newTitle.trim() !== '') {
-        list.title = newTitle.trim();
+    // 편집 모드로 전환
+    const listElement = document.querySelector(`.list-item[data-list-id="${listId}"]`);
+    const titleElement = listElement.querySelector('.list-title-text');
+    const originalTitle = titleElement.textContent;
+    
+    // 편집 UI 생성
+    titleElement.innerHTML = `
+        <input type="text" class="edit-input" value="${originalTitle}" id="edit-title-${listId}">
+        <div class="edit-buttons">
+            <button class="save-btn" onclick="event.stopPropagation(); saveListEdit('${listId}')">저장</button>
+            <button class="cancel-btn" onclick="event.stopPropagation(); cancelListEdit('${listId}', '${originalTitle}')">취소</button>
+        </div>
+    `;
+    
+    // 입력 필드에 포커스
+    setTimeout(() => {
+        document.getElementById(`edit-title-${listId}`).focus();
+    }, 0);
+}
+
+// 방덱 편집 저장
+function saveListEdit(listId) {
+    const list = lists.find(l => l.id === listId);
+    if (!list) return;
+    
+    const editInput = document.getElementById(`edit-title-${listId}`);
+    const newTitle = editInput.value.trim();
+    
+    if (newTitle) {
+        list.title = newTitle;
         saveLists();
         renderLists();
         updateStats();
+    } else {
+        alert('방덱 이름을 입력해주세요.');
     }
+}
+
+// 방덱 편집 취소
+function cancelListEdit(listId, originalTitle) {
+    renderLists();
 }
 
 // 메모 편집
@@ -378,12 +412,51 @@ function editMemo(listId, memoId) {
     const memo = list.memos.find(m => m.id === memoId);
     if (!memo) return;
     
-    const newText = prompt('메모를 수정하세요:', memo.text);
-    if (newText && newText.trim() !== '') {
-        memo.text = newText.trim();
+    // 편집 모드로 전환
+    const memoElement = document.querySelector(`.memo-item[data-memo-id="${memoId}"]`);
+    if (!memoElement) return;
+    
+    const memoTextElement = memoElement.querySelector('.memo-text');
+    const originalText = memoTextElement.textContent;
+    
+    // 편집 UI 생성
+    memoElement.innerHTML = `
+        <input type="text" class="edit-input" value="${originalText}" id="edit-memo-${memoId}">
+        <div class="edit-buttons">
+            <button class="save-btn" onclick="event.stopPropagation(); saveMemoEdit('${listId}', '${memoId}')">저장</button>
+            <button class="cancel-btn" onclick="event.stopPropagation(); cancelMemoEdit('${listId}', '${memoId}', '${originalText}')">취소</button>
+        </div>
+    `;
+    
+    // 입력 필드에 포커스
+    setTimeout(() => {
+        document.getElementById(`edit-memo-${memoId}`).focus();
+    }, 0);
+}
+
+// 메모 편집 저장
+function saveMemoEdit(listId, memoId) {
+    const list = lists.find(l => l.id === listId);
+    if (!list) return;
+    
+    const memo = list.memos.find(m => m.id === memoId);
+    if (!memo) return;
+    
+    const editInput = document.getElementById(`edit-memo-${memoId}`);
+    const newText = editInput.value.trim();
+    
+    if (newText) {
+        memo.text = newText;
         saveLists();
         renderLists();
+    } else {
+        alert('메모 내용을 입력해주세요.');
     }
+}
+
+// 메모 편집 취소
+function cancelMemoEdit(listId, memoId, originalText) {
+    renderLists();
 }
 
 // 페이지 로드 시 이벤트 리스너 추가
