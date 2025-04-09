@@ -292,18 +292,16 @@ async function loadFromGithub() {
     }
 }
 
-// 방덱 목록 정렬
-function sortLists() {
+// 목록 및 메모 정렬
+function sortAll() {
+    // 방덱 목록 정렬
     lists.sort((a, b) => a.title.localeCompare(b.title, 'ko'));
-    saveLists();
-    renderLists();
-}
-
-// 메모 내용 정렬
-function sortMemos() {
+    
+    // 각 방덱의 메모 정렬
     lists.forEach(list => {
         list.memos.sort((a, b) => a.text.localeCompare(b.text, 'ko'));
     });
+    
     saveLists();
     renderLists();
 }
@@ -323,37 +321,35 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // 탭 키 이벤트 처리
+    // 키보드 이벤트 처리
     document.getElementById('searchInput').addEventListener('keydown', function(e) {
-        if (e.key === 'Tab') {
-            e.preventDefault();
-            const searchResults = document.getElementById('searchResults');
-            const items = searchResults.querySelectorAll('.list-item');
-            
-            if (items.length > 0) {
-                selectedIndex = (selectedIndex + 1) % items.length;
-                items.forEach((item, index) => {
-                    if (index === selectedIndex) {
-                        item.classList.add('selected');
-                    } else {
-                        item.classList.remove('selected');
-                    }
-                });
-            }
-        }
-    });
-    
-    // 스페이스바 이벤트 처리
-    document.getElementById('searchInput').addEventListener('keydown', function(e) {
-        if (e.key === ' ') {
-            const searchResults = document.getElementById('searchResults');
-            const selectedItem = searchResults.querySelector('.list-item.selected');
-            
-            if (selectedItem) {
+        const searchResults = document.getElementById('searchResults');
+        const items = searchResults.querySelectorAll('.list-item');
+        
+        if (items.length === 0) return;
+        
+        switch(e.key) {
+            case 'Tab':
+            case 'ArrowDown':
                 e.preventDefault();
-                const word = selectedItem.getAttribute('data-word');
-                selectWord(word);
-            }
+                selectedIndex = (selectedIndex + 1) % items.length;
+                updateSelectedItem(items);
+                break;
+                
+            case 'ArrowUp':
+                e.preventDefault();
+                selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+                updateSelectedItem(items);
+                break;
+                
+            case ' ':
+                const selectedItem = searchResults.querySelector('.list-item.selected');
+                if (selectedItem) {
+                    e.preventDefault();
+                    const word = selectedItem.getAttribute('data-word');
+                    selectWord(word);
+                }
+                break;
         }
     });
     
@@ -370,4 +366,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // GitHub 버튼 이벤트 리스너
     document.getElementById('uploadGithubBtn').addEventListener('click', uploadToGithub);
     document.getElementById('loadGithubBtn').addEventListener('click', loadFromGithub);
-}); 
+});
+
+// 선택된 항목 업데이트
+function updateSelectedItem(items) {
+    items.forEach((item, index) => {
+        if (index === selectedIndex) {
+            item.classList.add('selected');
+            item.scrollIntoView({ block: 'nearest' });
+        } else {
+            item.classList.remove('selected');
+        }
+    });
+} 
