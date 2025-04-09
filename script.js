@@ -127,7 +127,7 @@ window.uploadToGithub = async function() {
         const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/${DATA_FILE}`, {
             method: 'PUT',
             headers: {
-                'Authorization': `token ${window.GITHUBTOKEN}`,
+                'Authorization': `Bearer ${GITHUBTOKEN}`,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -137,14 +137,16 @@ window.uploadToGithub = async function() {
             })
         });
 
-        if (response.ok) {
-            alert('GitHub에 성공적으로 업로드되었습니다.');
-        } else {
-            throw new Error('업로드 실패');
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('GitHub API Error:', errorData);
+            throw new Error(`업로드 실패 (${response.status}: ${errorData.message})`);
         }
+        
+        alert('GitHub에 성공적으로 업로드되었습니다.');
     } catch (error) {
         console.error('Error:', error);
-        alert('GitHub 업로드 중 오류가 발생했습니다.');
+        alert(`GitHub 업로드 중 오류가 발생했습니다: ${error.message}`);
     }
 };
 
@@ -153,23 +155,25 @@ window.loadFromGithub = async function() {
     try {
         const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/${DATA_FILE}`, {
             headers: {
-                'Authorization': `token ${window.GITHUBTOKEN}`
+                'Authorization': `Bearer ${GITHUBTOKEN}`
             }
         });
 
-        if (response.ok) {
-            const data = await response.json();
-            const content = decodeURIComponent(escape(atob(data.content)));
-            lists = JSON.parse(content);
-            saveLists();
-            renderLists();
-            alert('GitHub에서 데이터를 성공적으로 불러왔습니다.');
-        } else {
-            throw new Error('데이터 불러오기 실패');
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('GitHub API Error:', errorData);
+            throw new Error(`데이터 불러오기 실패 (${response.status}: ${errorData.message})`);
         }
+
+        const data = await response.json();
+        const content = decodeURIComponent(escape(atob(data.content)));
+        lists = JSON.parse(content);
+        saveLists();
+        renderLists();
+        alert('GitHub에서 데이터를 성공적으로 불러왔습니다.');
     } catch (error) {
         console.error('Error:', error);
-        alert('GitHub에서 데이터를 불러오는 중 오류가 발생했습니다.');
+        alert(`GitHub에서 데이터를 불러오는 중 오류가 발생했습니다: ${error.message}`);
     }
 };
 
