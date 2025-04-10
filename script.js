@@ -138,10 +138,19 @@ function addNewList() {
 
 // 방덱 삭제
 function deleteList(listId) {
-    if (confirm('정말 삭제하시겠습니까?')) {
-        lists = lists.filter(list => list.id !== listId);
-        saveLists();
-        renderLists();
+    console.log('방덱 삭제 시도:', listId);
+    if (confirm('해당 목록을 삭제하시겠습니까?')) {
+        const list = lists.find(l => l.id === listId);
+        if (list) {
+            lists = lists.filter(list => list.id !== listId);
+            saveLists();
+            renderLists();
+            console.log('방덱 삭제 완료:', listId);
+        } else {
+            console.error('삭제할 방덱을 찾을 수 없습니다:', listId);
+        }
+    } else {
+        console.log('방덱 삭제 취소:', listId);
     }
 }
 
@@ -168,11 +177,19 @@ function addMemo(listId) {
 
 // 메모 삭제
 function deleteMemo(listId, memoId) {
-    const list = lists.find(l => l.id === listId);
-    if (list) {
-        list.memos = list.memos.filter(memo => memo.id !== memoId);
-        saveLists();
-        renderLists();
+    console.log('메모 삭제 시도:', { listId, memoId });
+    if (confirm('해당 메모를 삭제하시겠습니까?')) {
+        const list = lists.find(l => l.id === listId);
+        if (list) {
+            list.memos = list.memos.filter(memo => memo.id !== memoId);
+            saveLists();
+            renderLists();
+            console.log('메모 삭제 완료:', { listId, memoId });
+        } else {
+            console.error('방덱을 찾을 수 없습니다:', listId);
+        }
+    } else {
+        console.log('메모 삭제 취소:', { listId, memoId });
     }
 }
 
@@ -181,12 +198,12 @@ function renderLists() {
     const listsContainer = document.getElementById('lists');
     listsContainer.innerHTML = lists.map(list => `
         <div class="list-item" data-list-id="${list.id}">
-            <div class="list-title" onclick="toggleMemos('${list.id}')">
+            <div class="list-title">
                 <span class="list-title-text">${list.title}</span>
                 <span class="memo-count">${list.memos.length}/50</span>
                 <div class="button-group">
-                    <button class="edit-btn" onclick="event.stopPropagation(); startEditList('${list.id}')">편집</button>
-                    <button class="delete-btn" onclick="event.stopPropagation(); deleteList('${list.id}')">삭제</button>
+                    <button class="edit-btn" onclick="startEditList('${list.id}')">편집</button>
+                    <button class="delete-btn" onclick="deleteList('${list.id}')">삭제</button>
                 </div>
             </div>
             <div class="memo-section" id="memoSection-${list.id}">
@@ -208,6 +225,16 @@ function renderLists() {
             </div>
         </div>
     `).join('');
+
+    // 이벤트 리스너 추가
+    document.querySelectorAll('.list-title').forEach(title => {
+        title.addEventListener('click', function(e) {
+            if (!e.target.closest('.button-group')) {
+                const listId = this.closest('.list-item').dataset.listId;
+                toggleMemos(listId);
+            }
+        });
+    });
 }
 
 // 방덱 클릭 처리
@@ -407,23 +434,15 @@ function sortAll() {
 
 // 방덱 편집 시작
 function startEditList(listId) {
-    console.log('방덱 편집 시작:', listId);
-    const list = lists.find(l => l.id === listId);
-    if (!list) {
-        console.error('방덱을 찾을 수 없습니다:', listId);
-        return;
-    }
+    const list = lists.find(l => l.id.toString() === listId.toString());
+    if (!list) return;
 
     const listTitle = document.querySelector(`[data-list-id="${listId}"] .list-title-text`);
-    if (!listTitle) {
-        console.error('방덱 제목 요소를 찾을 수 없습니다:', listId);
-        return;
-    }
+    if (!listTitle) return;
 
-    // 편집 모드로 전환
     listTitle.innerHTML = `
         <div class="edit-container">
-            <input type="text" class="edit-input" value="${list.title}" id="editListInput-${listId}">
+            <input type="text" class="edit-input" value="${list.title}" id="editListInput-${listId}" onkeypress="if(event.key === 'Enter') saveListEdit('${listId}')">
             <div class="edit-buttons">
                 <button class="save-btn" onclick="saveListEdit('${listId}')">저장</button>
                 <button class="cancel-btn" onclick="cancelListEdit('${listId}')">취소</button>
@@ -431,7 +450,6 @@ function startEditList(listId) {
         </div>
     `;
 
-    // 입력 필드에 포커스
     const input = document.getElementById(`editListInput-${listId}`);
     if (input) {
         input.focus();
@@ -443,12 +461,8 @@ function startEditList(listId) {
 
 // 방덱 편집 저장
 function saveListEdit(listId) {
-    console.log('방덱 편집 저장:', listId);
     const input = document.getElementById(`editListInput-${listId}`);
-    if (!input) {
-        console.error('편집 입력 필드를 찾을 수 없습니다:', listId);
-        return;
-    }
+    if (!input) return;
 
     const newTitle = input.value.trim();
     if (!newTitle) {
@@ -456,7 +470,7 @@ function saveListEdit(listId) {
         return;
     }
 
-    const list = lists.find(l => l.id === listId);
+    const list = lists.find(l => l.id.toString() === listId.toString());
     if (list) {
         list.title = newTitle;
         saveLists();
@@ -468,39 +482,24 @@ function saveListEdit(listId) {
 
 // 방덱 편집 취소
 function cancelListEdit(listId) {
-    console.log('방덱 편집 취소:', listId);
-    const list = lists.find(l => l.id === listId);
-    if (list) {
-        renderLists();
-    }
+    renderLists();
     editingListId = null;
 }
 
 // 메모 편집 시작
 function startEditMemo(listId, memoId) {
-    console.log('메모 편집 시작:', listId, memoId);
-    const list = lists.find(l => l.id === listId);
-    if (!list) {
-        console.error('방덱을 찾을 수 없습니다:', listId);
-        return;
-    }
+    const list = lists.find(l => l.id.toString() === listId.toString());
+    if (!list) return;
 
-    const memo = list.memos.find(m => m.id === memoId);
-    if (!memo) {
-        console.error('메모를 찾을 수 없습니다:', memoId);
-        return;
-    }
+    const memo = list.memos.find(m => m.id.toString() === memoId.toString());
+    if (!memo) return;
 
     const memoText = document.querySelector(`[data-memo-id="${memoId}"] .memo-text`);
-    if (!memoText) {
-        console.error('메모 텍스트 요소를 찾을 수 없습니다:', memoId);
-        return;
-    }
+    if (!memoText) return;
 
-    // 편집 모드로 전환
     memoText.innerHTML = `
         <div class="edit-container">
-            <input type="text" class="edit-input" value="${memo.text}" id="editMemoInput-${memoId}">
+            <input type="text" class="edit-input" value="${memo.text}" id="editMemoInput-${memoId}" onkeypress="if(event.key === 'Enter') saveMemoEdit('${listId}', '${memoId}')">
             <div class="edit-buttons">
                 <button class="save-btn" onclick="saveMemoEdit('${listId}', '${memoId}')">저장</button>
                 <button class="cancel-btn" onclick="cancelMemoEdit('${listId}', '${memoId}')">취소</button>
@@ -508,7 +507,6 @@ function startEditMemo(listId, memoId) {
         </div>
     `;
 
-    // 입력 필드에 포커스
     const input = document.getElementById(`editMemoInput-${memoId}`);
     if (input) {
         input.focus();
@@ -520,12 +518,8 @@ function startEditMemo(listId, memoId) {
 
 // 메모 편집 저장
 function saveMemoEdit(listId, memoId) {
-    console.log('메모 편집 저장:', listId, memoId);
     const input = document.getElementById(`editMemoInput-${memoId}`);
-    if (!input) {
-        console.error('편집 입력 필드를 찾을 수 없습니다:', memoId);
-        return;
-    }
+    if (!input) return;
 
     const newText = input.value.trim();
     if (!newText) {
@@ -533,9 +527,9 @@ function saveMemoEdit(listId, memoId) {
         return;
     }
 
-    const list = lists.find(l => l.id === listId);
+    const list = lists.find(l => l.id.toString() === listId.toString());
     if (list) {
-        const memo = list.memos.find(m => m.id === memoId);
+        const memo = list.memos.find(m => m.id.toString() === memoId.toString());
         if (memo) {
             memo.text = newText;
             saveLists();
@@ -548,11 +542,7 @@ function saveMemoEdit(listId, memoId) {
 
 // 메모 편집 취소
 function cancelMemoEdit(listId, memoId) {
-    console.log('메모 편집 취소:', listId, memoId);
-    const list = lists.find(l => l.id === listId);
-    if (list) {
-        renderLists();
-    }
+    renderLists();
     editingMemoId = null;
 }
 

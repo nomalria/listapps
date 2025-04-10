@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>방덱 목록 관리</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📝</text></svg>">
 </head>
 <body>
     <div class="container">
@@ -73,12 +73,15 @@
         // GitHub 토큰 가져오기 함수
         function getGithubToken() {
             const token = document.getElementById('githubToken').value;
-            window.GITHUBTOKEN = token; // 토큰을 window 객체에 저장
+            window.GITHUBTOKEN = token;
             return token;
         }
         
         // 페이지 로드 시 이벤트 리스너 추가
         document.addEventListener('DOMContentLoaded', function() {
+            // 초기 데이터 로드
+            loadLists();
+            
             // GitHub 토큰 입력 필드에 이벤트 리스너 추가
             document.getElementById('githubToken').addEventListener('input', function() {
                 window.GITHUBTOKEN = this.value;
@@ -99,11 +102,13 @@
                 if (e.key === 'Enter') {
                     const query = this.value.trim();
                     if (query) {
-                        // 검색 결과가 없으면 새 방덱 추가
                         addNewList();
                     }
                 }
             });
+            
+            // 추가 버튼 이벤트 리스너
+            document.getElementById('addListBtn').addEventListener('click', addNewList);
             
             // 정렬 버튼 이벤트 리스너
             document.getElementById('sortBtn').addEventListener('click', sortAll);
@@ -111,12 +116,6 @@
             // GitHub 버튼 이벤트 리스너
             document.getElementById('uploadGithubBtn').addEventListener('click', uploadToGithub);
             document.getElementById('loadGithubBtn').addEventListener('click', loadFromGithub);
-            
-            // 추가 버튼 이벤트 리스너
-            document.getElementById('addListBtn').addEventListener('click', addNewList);
-            
-            // 초기 데이터 로드
-            loadLists();
         });
     </script>
 </body>
