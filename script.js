@@ -156,12 +156,16 @@ function deleteList(listId) {
 
 // 메모 추가
 function addMemo(listId) {
-    const memoInput = document.getElementById(`memoInput-${listId}`);
+    const memoInput = document.getElementById(`newMemoInput-${listId}`);
     const memoText = memoInput.value.trim();
     
     if (memoText) {
-        const list = lists.find(l => l.id === listId);
-        if (list && list.memos.length < 50) {
+        const list = lists.find(l => l.id.toString() === listId.toString());
+        if (list) {
+            if (list.memos.length >= 50) {
+                alert('한 방덱에는 최대 50개의 메모만 추가할 수 있습니다.');
+                return;
+            }
             list.memos.push({
                 id: Date.now().toString(),
                 text: memoText
@@ -169,27 +173,19 @@ function addMemo(listId) {
             saveLists();
             renderLists();
             memoInput.value = '';
-        } else {
-            alert('메모는 최대 50개까지만 추가할 수 있습니다.');
         }
     }
 }
 
 // 메모 삭제
 function deleteMemo(listId, memoId) {
-    console.log('메모 삭제 시도:', { listId, memoId });
     if (confirm('해당 메모를 삭제하시겠습니까?')) {
-        const list = lists.find(l => l.id === listId);
+        const list = lists.find(l => l.id.toString() === listId.toString());
         if (list) {
-            list.memos = list.memos.filter(memo => memo.id !== memoId);
+            list.memos = list.memos.filter(memo => memo.id.toString() !== memoId.toString());
             saveLists();
             renderLists();
-            console.log('메모 삭제 완료:', { listId, memoId });
-        } else {
-            console.error('방덱을 찾을 수 없습니다:', listId);
         }
-    } else {
-        console.log('메모 삭제 취소:', { listId, memoId });
     }
 }
 
@@ -206,9 +202,18 @@ function renderLists() {
                     <button class="delete-btn" onclick="deleteList('${list.id}')">삭제</button>
                 </div>
             </div>
+            <div class="edit-section" id="editSection-${list.id}">
+                <div class="input-group">
+                    <input type="text" id="editListInput-${list.id}" placeholder="방덱 제목 수정..." onkeypress="if(event.key === 'Enter') saveListEdit('${list.id}')">
+                    <div class="edit-buttons">
+                        <button class="save-btn" onclick="saveListEdit('${list.id}')">저장</button>
+                        <button class="cancel-btn" onclick="cancelListEdit('${list.id}')">취소</button>
+                    </div>
+                </div>
+            </div>
             <div class="memo-section" id="memoSection-${list.id}">
                 <div class="input-group">
-                    <input type="text" id="memoInput-${list.id}" placeholder="메모 추가..." onkeypress="if(event.key === 'Enter') addMemo('${list.id}')">
+                    <input type="text" id="newMemoInput-${list.id}" placeholder="메모 추가..." onkeypress="if(event.key === 'Enter') addMemo('${list.id}')">
                     <button onclick="addMemo('${list.id}')">추가</button>
                 </div>
                 <div class="memo-list">
@@ -218,6 +223,15 @@ function renderLists() {
                             <div class="memo-buttons">
                                 <button class="edit-btn" onclick="startEditMemo('${list.id}', '${memo.id}')">편집</button>
                                 <button class="delete-btn" onclick="deleteMemo('${list.id}', '${memo.id}')">삭제</button>
+                            </div>
+                            <div class="edit-section" id="editMemoSection-${memo.id}">
+                                <div class="input-group">
+                                    <input type="text" id="editMemoInput-${memo.id}" placeholder="메모 내용 수정..." onkeypress="if(event.key === 'Enter') saveMemoEdit('${list.id}', '${memo.id}')">
+                                    <div class="edit-buttons">
+                                        <button class="save-btn" onclick="saveMemoEdit('${list.id}', '${memo.id}')">저장</button>
+                                        <button class="cancel-btn" onclick="cancelMemoEdit('${list.id}', '${memo.id}')">취소</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     `).join('')}
@@ -437,25 +451,17 @@ function startEditList(listId) {
     const list = lists.find(l => l.id.toString() === listId.toString());
     if (!list) return;
 
-    const listTitle = document.querySelector(`[data-list-id="${listId}"] .list-title-text`);
-    if (!listTitle) return;
-
-    listTitle.innerHTML = `
-        <div class="edit-container">
-            <input type="text" class="edit-input" value="${list.title}" id="editListInput-${listId}" onkeypress="if(event.key === 'Enter') saveListEdit('${listId}')">
-            <div class="edit-buttons">
-                <button class="save-btn" onclick="saveListEdit('${listId}')">저장</button>
-                <button class="cancel-btn" onclick="cancelListEdit('${listId}')">취소</button>
-            </div>
-        </div>
-    `;
+    const editSection = document.getElementById(`editSection-${listId}`);
+    if (!editSection) return;
 
     const input = document.getElementById(`editListInput-${listId}`);
     if (input) {
+        input.value = list.title;
         input.focus();
         input.select();
     }
 
+    editSection.style.display = 'block';
     editingListId = listId;
 }
 
@@ -482,44 +488,51 @@ function saveListEdit(listId) {
 
 // 방덱 편집 취소
 function cancelListEdit(listId) {
-    renderLists();
+    const editSection = document.getElementById(`editSection-${listId}`);
+    if (editSection) {
+        editSection.style.display = 'none';
+    }
     editingListId = null;
 }
 
 // 메모 편집 시작
 function startEditMemo(listId, memoId) {
     const list = lists.find(l => l.id.toString() === listId.toString());
-    if (!list) return;
+    if (!list) {
+        console.error('방덱을 찾을 수 없습니다:', listId);
+        return;
+    }
 
     const memo = list.memos.find(m => m.id.toString() === memoId.toString());
-    if (!memo) return;
+    if (!memo) {
+        console.error('메모를 찾을 수 없습니다:', memoId);
+        return;
+    }
 
-    const memoText = document.querySelector(`[data-memo-id="${memoId}"] .memo-text`);
-    if (!memoText) return;
-
-    memoText.innerHTML = `
-        <div class="edit-container">
-            <input type="text" class="edit-input" value="${memo.text}" id="editMemoInput-${memoId}" onkeypress="if(event.key === 'Enter') saveMemoEdit('${listId}', '${memoId}')">
-            <div class="edit-buttons">
-                <button class="save-btn" onclick="saveMemoEdit('${listId}', '${memoId}')">저장</button>
-                <button class="cancel-btn" onclick="cancelMemoEdit('${listId}', '${memoId}')">취소</button>
-            </div>
-        </div>
-    `;
+    const editSection = document.getElementById(`editMemoSection-${memoId}`);
+    if (!editSection) {
+        console.error('편집 섹션을 찾을 수 없습니다:', memoId);
+        return;
+    }
 
     const input = document.getElementById(`editMemoInput-${memoId}`);
     if (input) {
+        input.value = memo.text;
         input.focus();
         input.select();
     }
 
+    editSection.style.display = 'block';
     editingMemoId = memoId;
 }
 
 // 메모 편집 저장
 function saveMemoEdit(listId, memoId) {
     const input = document.getElementById(`editMemoInput-${memoId}`);
-    if (!input) return;
+    if (!input) {
+        console.error('입력 필드를 찾을 수 없습니다:', memoId);
+        return;
+    }
 
     const newText = input.value.trim();
     if (!newText) {
@@ -534,7 +547,11 @@ function saveMemoEdit(listId, memoId) {
             memo.text = newText;
             saveLists();
             renderLists();
+        } else {
+            console.error('메모를 찾을 수 없습니다:', memoId);
         }
+    } else {
+        console.error('방덱을 찾을 수 없습니다:', listId);
     }
 
     editingMemoId = null;
@@ -542,7 +559,10 @@ function saveMemoEdit(listId, memoId) {
 
 // 메모 편집 취소
 function cancelMemoEdit(listId, memoId) {
-    renderLists();
+    const editSection = document.getElementById(`editMemoSection-${memoId}`);
+    if (editSection) {
+        editSection.style.display = 'none';
+    }
     editingMemoId = null;
 }
 
