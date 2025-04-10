@@ -173,18 +173,22 @@ button:hover {
 }
 
 .list-item {
-    margin-bottom: 16px;
+    position: relative;
+    margin-bottom: 10px;
     border: 1px solid #ddd;
-    border-radius: 8px;
-    overflow: hidden;
+    border-radius: 4px;
+    background-color: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .list-title {
-    display: flex;
-    align-items: center;
-    padding: 12px;
-    background-color: #f5f5f5;
+    padding: 10px;
     cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f8f9fa;
+    border-radius: 4px 4px 0 0;
 }
 
 .list-title-text {
@@ -229,12 +233,27 @@ button:hover {
 
 /* 메모 섹션 */
 .memo-section {
-    padding: 12px;
-    display: none;
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    background-color: #f8f9fa;
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 .memo-section.expanded {
-    display: block;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.memo-list {
+    padding: 10px;
+    max-height: 400px;
+    overflow-y: auto;
 }
 
 .memo-item {
@@ -242,7 +261,10 @@ button:hover {
     justify-content: space-between;
     align-items: center;
     padding: 8px;
-    border-bottom: 1px solid #eee;
+    margin-bottom: 5px;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .memo-text {
