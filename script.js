@@ -391,8 +391,8 @@ function updateStats() {
         }
     });
     
-    document.getElementById('stat-4deck').textContent = stats['4deck'];
-    document.getElementById('stat-5deck').textContent = stats['5deck'];
+    document.getElementById('stat-4').textContent = stats['4deck'];
+    document.getElementById('stat-5').textContent = stats['5deck'];
     document.getElementById('stat-other').textContent = stats['other'];
 }
 
