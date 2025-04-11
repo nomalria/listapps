@@ -627,7 +627,7 @@ async function uploadToGithub() {
             temporaryLists: temporaryLists
         };
 
-        const response = await fetch('/.netlify/functions/upload', {
+        const response = await fetch('/api/upload', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -656,7 +656,7 @@ async function loadFromGithub() {
             return;
         }
 
-        const response = await fetch('/.netlify/functions/download', {
+        const response = await fetch('/api/download', {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -733,7 +733,7 @@ async function handleGitHubCallback() {
 
     if (code && state && state === savedState) {
         try {
-            const response = await fetch('/.netlify/functions/auth', {
+            const response = await fetch('/api/auth', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
