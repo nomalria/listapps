@@ -524,36 +524,78 @@ function cancelMemoEdit(listId, memoId, isTemporary = false) {
     editingMemoId = null;
 }
 
+// 목록 및 메모 정렬
+function sortAll() {
+    // 임시 목록의 항목들을 기존 목록에 추가
+    lists = [...temporaryLists, ...lists];
+    
+    // 단어 순으로 정렬
+    lists.sort((a, b) => {
+        const wordsA = a.title.split(' ');
+        const wordsB = b.title.split(' ');
+        return wordsA[0].localeCompare(wordsB[0]) || wordsA[1].localeCompare(wordsB[1]);
+    });
+    
+    // 임시 목록 비우기
+    temporaryLists = [];
+    
+    // 목록 저장 및 렌더링
+    saveLists();
+    renderLists();
+    renderTemporaryLists();
+    updateStats();
+}
+
 // 페이지 로드 시 이벤트 리스너 추가
 document.addEventListener('DOMContentLoaded', async function() {
     // 초기 데이터 로드
     loadLists();
     
     // 검색 입력 필드에 이벤트 리스너 추가
-    document.getElementById('searchInput').addEventListener('input', function() {
-        const query = this.value.trim();
-        if (query) {
-            searchLists(query);
-        } else {
-            document.getElementById('searchResults').innerHTML = '';
-        }
-    });
-    
-    // Enter 키 이벤트 처리
-    document.getElementById('searchInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
             const query = this.value.trim();
             if (query) {
-                addNewList();
+                searchLists(query);
+            } else {
+                document.getElementById('searchResults').innerHTML = '';
             }
-        }
-    });
+        });
+
+        // Enter 키 이벤트 처리
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const query = this.value.trim();
+                if (query) {
+                    addNewList();
+                }
+            }
+        });
+    }
     
     // 추가 버튼 이벤트 리스너
-    document.getElementById('addListBtn').addEventListener('click', addNewList);
+    const addListBtn = document.getElementById('addListBtn');
+    if (addListBtn) {
+        addListBtn.addEventListener('click', addNewList);
+    }
     
     // 정렬 버튼 이벤트 리스너
-    document.getElementById('sortBtn').addEventListener('click', sortAll);
+    const sortBtn = document.getElementById('sortBtn');
+    if (sortBtn) {
+        sortBtn.addEventListener('click', sortAll);
+    }
+
+    // GitHub 버튼 이벤트 리스너
+    const uploadGithubBtn = document.getElementById('uploadGithubBtn');
+    if (uploadGithubBtn) {
+        uploadGithubBtn.addEventListener('click', uploadToGithub);
+    }
+
+    const loadGithubBtn = document.getElementById('loadGithubBtn');
+    if (loadGithubBtn) {
+        loadGithubBtn.addEventListener('click', loadFromGithub);
+    }
 });
 
 // 선택된 항목 업데이트
