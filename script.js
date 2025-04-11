@@ -1,5 +1,6 @@
 // 전역 변수
 let lists = [];
+let temporaryLists = [];
 let currentListId = null;
 
 // 삭제 확인을 위한 타이머 객체
@@ -114,53 +115,121 @@ function addNewList() {
     
     // 동일한 방덱이 있는지 확인
     const existingListIndex = lists.findIndex(list => isSameList(list.title, title));
+    const temporaryListIndex = temporaryLists.findIndex(list => isSameList(list.title, title));
     
     if (existingListIndex !== -1) {
-        // 기존 방덱을 맨 위로 이동
+        // 기존 방덱을 임시 목록의 맨 위로 이동
         const existingList = lists.splice(existingListIndex, 1)[0];
-        lists.unshift(existingList);
-        searchInput.value = ''; // 검색창 초기화
+        temporaryLists.unshift(existingList);
+        renderTemporaryLists();
+    } else if (temporaryListIndex !== -1) {
+        // 임시 목록에 있는 방덱을 맨 위로 이동
+        const existingList = temporaryLists.splice(temporaryListIndex, 1)[0];
+        temporaryLists.unshift(existingList);
+        renderTemporaryLists();
     } else {
-        // 새 방덱 추가
+        // 새 방덱을 임시 목록에 추가
         const newList = {
             id: Date.now().toString(),
             title: title,
             memos: []
         };
-        lists.unshift(newList); // 새 방덱을 맨 위에 추가
+        temporaryLists.unshift(newList);
+        renderTemporaryLists();
     }
     
-    saveLists();
-    searchInput.value = ''; // 검색창 초기화
-    renderLists();
+    searchInput.value = '';
     updateStats();
 }
 
+// 임시 목록 렌더링
+function renderTemporaryLists() {
+    const temporaryListsContainer = document.getElementById('temporaryLists');
+    temporaryListsContainer.innerHTML = temporaryLists.map(list => `
+        <div class="list-item" data-list-id="${list.id}">
+            <div class="list-title">
+                <span class="list-title-text">${list.title}</span>
+                <span class="memo-count">${list.memos.length}/50</span>
+                <div class="button-group">
+                    <button class="edit-btn" onclick="startEditList('${list.id}', true)">편집</button>
+                    <button class="delete-btn" onclick="deleteList('${list.id}', true)">삭제</button>
+                </div>
+            </div>
+            <div class="edit-section" id="editSection-${list.id}">
+                <div class="input-group">
+                    <input type="text" id="editListInput-${list.id}" placeholder="방덱 제목 수정..." onkeypress="if(event.key === 'Enter') saveListEdit('${list.id}', true)">
+                    <div class="edit-buttons">
+                        <button class="save-btn" onclick="saveListEdit('${list.id}', true)">저장</button>
+                        <button class="cancel-btn" onclick="cancelListEdit('${list.id}', true)">취소</button>
+                    </div>
+                </div>
+            </div>
+            <div class="memo-section" id="memoSection-${list.id}">
+                <div class="input-group">
+                    <input type="text" id="newMemoInput-${list.id}" placeholder="메모 추가..." onkeypress="if(event.key === 'Enter') addMemo('${list.id}', true)">
+                    <button onclick="addMemo('${list.id}', true)">추가</button>
+                </div>
+                <div class="memo-list">
+                    ${list.memos.map(memo => `
+                        <div class="memo-item" data-memo-id="${memo.id}">
+                            <span class="memo-text">${memo.text}</span>
+                            <div class="memo-buttons">
+                                <button class="edit-btn" onclick="startEditMemo('${list.id}', '${memo.id}', true)">편집</button>
+                                <button class="delete-btn" onclick="deleteMemo('${list.id}', '${memo.id}', true)">삭제</button>
+                            </div>
+                            <div class="edit-section" id="editMemoSection-${memo.id}">
+                                <div class="input-group">
+                                    <input type="text" id="editMemoInput-${memo.id}" placeholder="메모 내용 수정..." onkeypress="if(event.key === 'Enter') saveMemoEdit('${list.id}', '${memo.id}', true)">
+                                    <div class="edit-buttons">
+                                        <button class="save-btn" onclick="saveMemoEdit('${list.id}', '${memo.id}', true)">저장</button>
+                                        <button class="cancel-btn" onclick="cancelMemoEdit('${list.id}', '${memo.id}', true)">취소</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+    `).join('');
+
+    // 임시 목록의 이벤트 리스너 추가
+    document.querySelectorAll('#temporaryLists .list-title').forEach(title => {
+        title.addEventListener('click', function(e) {
+            if (!e.target.closest('.button-group')) {
+                const listId = this.closest('.list-item').dataset.listId;
+                toggleMemos(listId);
+            }
+        });
+    });
+}
+
 // 방덱 삭제
-function deleteList(listId) {
-    console.log('방덱 삭제 시도:', listId);
+function deleteList(listId, isTemporary = false) {
     if (confirm('해당 목록을 삭제하시겠습니까?')) {
-        const list = lists.find(l => l.id === listId);
-        if (list) {
-            lists = lists.filter(list => list.id !== listId);
+        if (isTemporary) {
+            // 임시 목록에서 삭제
+            temporaryLists = temporaryLists.filter(list => list.id.toString() !== listId.toString());
+            renderTemporaryLists();
+            updateStats();
+        } else {
+            // 기존 목록에서 삭제
+            lists = lists.filter(list => list.id.toString() !== listId.toString());
             saveLists();
             renderLists();
-            console.log('방덱 삭제 완료:', listId);
-        } else {
-            console.error('삭제할 방덱을 찾을 수 없습니다:', listId);
+            updateStats();
         }
-    } else {
-        console.log('방덱 삭제 취소:', listId);
     }
 }
 
 // 메모 추가
-function addMemo(listId) {
+function addMemo(listId, isTemporary = false) {
     const memoInput = document.getElementById(`newMemoInput-${listId}`);
     const memoText = memoInput.value.trim();
     
     if (memoText) {
-        const list = lists.find(l => l.id.toString() === listId.toString());
+        const targetLists = isTemporary ? temporaryLists : lists;
+        const list = targetLists.find(l => l.id.toString() === listId.toString());
         if (list) {
             if (list.memos.length >= 50) {
                 alert('한 방덱에는 최대 50개의 메모만 추가할 수 있습니다.');
@@ -170,21 +239,26 @@ function addMemo(listId) {
                 id: Date.now().toString(),
                 text: memoText
             });
-            saveLists();
-            renderLists();
+            if (!isTemporary) {
+                saveLists();
+            }
+            isTemporary ? renderTemporaryLists() : renderLists();
             memoInput.value = '';
         }
     }
 }
 
 // 메모 삭제
-function deleteMemo(listId, memoId) {
+function deleteMemo(listId, memoId, isTemporary = false) {
     if (confirm('해당 메모를 삭제하시겠습니까?')) {
-        const list = lists.find(l => l.id.toString() === listId.toString());
+        const targetLists = isTemporary ? temporaryLists : lists;
+        const list = targetLists.find(l => l.id.toString() === listId.toString());
         if (list) {
             list.memos = list.memos.filter(memo => memo.id.toString() !== memoId.toString());
-            saveLists();
-            renderLists();
+            if (!isTemporary) {
+                saveLists();
+            }
+            isTemporary ? renderTemporaryLists() : renderLists();
         }
     }
 }
@@ -431,24 +505,30 @@ async function loadFromGithub() {
 
 // 목록 및 메모 정렬
 function sortAll() {
-    console.log('모든 방덱과 메모 정렬 시작');
+    // 임시 목록의 항목들을 기존 목록에 추가
+    lists = [...temporaryLists, ...lists];
     
-    // 방덱 정렬
-    lists.sort((a, b) => a.title.localeCompare(b.title));
-    
-    // 각 방덱의 메모 정렬
-    lists.forEach(list => {
-        list.memos.sort((a, b) => a.text.localeCompare(b.text));
+    // 단어 순으로 정렬
+    lists.sort((a, b) => {
+        const wordsA = a.title.split(' ');
+        const wordsB = b.title.split(' ');
+        return wordsA[0].localeCompare(wordsB[0]) || wordsA[1].localeCompare(wordsB[1]);
     });
     
+    // 임시 목록 비우기
+    temporaryLists = [];
+    
+    // 목록 저장 및 렌더링
     saveLists();
     renderLists();
-    console.log('정렬 완료');
+    renderTemporaryLists();
+    updateStats();
 }
 
 // 방덱 편집 시작
-function startEditList(listId) {
-    const list = lists.find(l => l.id.toString() === listId.toString());
+function startEditList(listId, isTemporary = false) {
+    const targetLists = isTemporary ? temporaryLists : lists;
+    const list = targetLists.find(l => l.id.toString() === listId.toString());
     if (!list) return;
 
     const editSection = document.getElementById(`editSection-${listId}`);
@@ -466,7 +546,7 @@ function startEditList(listId) {
 }
 
 // 방덱 편집 저장
-function saveListEdit(listId) {
+function saveListEdit(listId, isTemporary = false) {
     const input = document.getElementById(`editListInput-${listId}`);
     if (!input) return;
 
@@ -476,18 +556,21 @@ function saveListEdit(listId) {
         return;
     }
 
-    const list = lists.find(l => l.id.toString() === listId.toString());
+    const targetLists = isTemporary ? temporaryLists : lists;
+    const list = targetLists.find(l => l.id.toString() === listId.toString());
     if (list) {
         list.title = newTitle;
-        saveLists();
-        renderLists();
+        if (!isTemporary) {
+            saveLists();
+        }
+        isTemporary ? renderTemporaryLists() : renderLists();
     }
 
     editingListId = null;
 }
 
 // 방덱 편집 취소
-function cancelListEdit(listId) {
+function cancelListEdit(listId, isTemporary = false) {
     const editSection = document.getElementById(`editSection-${listId}`);
     if (editSection) {
         editSection.style.display = 'none';
@@ -496,8 +579,9 @@ function cancelListEdit(listId) {
 }
 
 // 메모 편집 시작
-function startEditMemo(listId, memoId) {
-    const list = lists.find(l => l.id.toString() === listId.toString());
+function startEditMemo(listId, memoId, isTemporary = false) {
+    const targetLists = isTemporary ? temporaryLists : lists;
+    const list = targetLists.find(l => l.id.toString() === listId.toString());
     if (!list) {
         console.error('방덱을 찾을 수 없습니다:', listId);
         return;
@@ -527,7 +611,7 @@ function startEditMemo(listId, memoId) {
 }
 
 // 메모 편집 저장
-function saveMemoEdit(listId, memoId) {
+function saveMemoEdit(listId, memoId, isTemporary = false) {
     const input = document.getElementById(`editMemoInput-${memoId}`);
     if (!input) {
         console.error('입력 필드를 찾을 수 없습니다:', memoId);
@@ -540,13 +624,16 @@ function saveMemoEdit(listId, memoId) {
         return;
     }
 
-    const list = lists.find(l => l.id.toString() === listId.toString());
+    const targetLists = isTemporary ? temporaryLists : lists;
+    const list = targetLists.find(l => l.id.toString() === listId.toString());
     if (list) {
         const memo = list.memos.find(m => m.id.toString() === memoId.toString());
         if (memo) {
             memo.text = newText;
-            saveLists();
-            renderLists();
+            if (!isTemporary) {
+                saveLists();
+            }
+            isTemporary ? renderTemporaryLists() : renderLists();
         } else {
             console.error('메모를 찾을 수 없습니다:', memoId);
         }
@@ -558,7 +645,7 @@ function saveMemoEdit(listId, memoId) {
 }
 
 // 메모 편집 취소
-function cancelMemoEdit(listId, memoId) {
+function cancelMemoEdit(listId, memoId, isTemporary = false) {
     const editSection = document.getElementById(`editMemoSection-${memoId}`);
     if (editSection) {
         editSection.style.display = 'none';

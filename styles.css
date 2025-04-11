@@ -516,4 +516,33 @@ button:hover {
 
 .edit-section .cancel-btn:hover {
     background-color: #d32f2f;
+}
+
+/* 임시 목록 섹션 */
+.temporary-section {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #FFF3E0;
+    border-radius: 8px;
+    border: 2px dashed #FF9800;
+}
+
+.temporary-section h2 {
+    color: #FF9800;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+/* 기존 목록 섹션 */
+.existing-section {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #E8F5E9;
+    border-radius: 8px;
+}
+
+.existing-section h2 {
+    color: #2E7D32;
+    margin-bottom: 15px;
+    text-align: center;
 } 
