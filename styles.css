@@ -85,6 +85,7 @@ h1 {
     background-color: #45a049;
 }
 
+/* 검색 결과 */
 .search-results {
     position: absolute;
     top: 100%;
@@ -103,6 +104,7 @@ h1 {
     padding: 8px 12px;
     cursor: pointer;
     border-bottom: 1px solid #eee;
+    transition: background-color 0.2s;
 }
 
 .search-results .list-item:last-child {
@@ -113,14 +115,36 @@ h1 {
     background-color: #f5f5f5;
 }
 
+.search-results .list-item.selected {
+    background-color: #e3f2fd;
+    font-weight: bold;
+}
+
 .search-results .memo-count {
     float: right;
     color: #666;
     font-size: 14px;
 }
 
-.search-results .list-item.selected {
-    background-color: #e3f2fd;
+/* 검색 입력 필드 */
+.search-section {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.search-section input {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #4CAF50;
+    border-radius: 4px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+.search-section input:focus {
+    outline: none;
+    border-color: #45a049;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
 }
 
 /* GitHub 섹션 */

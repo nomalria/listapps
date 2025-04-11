@@ -66,6 +66,12 @@ function searchLists(query) {
                 <span>${word}</span>
             </div>
         `).join('');
+        
+        // 검색 결과가 표시될 때 첫 번째 항목을 선택
+        if (selectedIndex === -1 && matchingWords.length > 0) {
+            selectedIndex = 0;
+            updateSelectedItem(searchResults.getElementsByClassName('list-item'));
+        }
     } else {
         searchResults.innerHTML = '';
         selectedIndex = -1;
@@ -75,9 +81,9 @@ function searchLists(query) {
 // 단어 선택 시 검색창에 추가
 function selectWord(word) {
     const searchInput = document.getElementById('searchInput');
-    const currentWords = searchInput.value.trim().split(' ').filter(w => w);
+    const currentWords = searchInput.value.trim().split(' ');
     
-    // 마지막 단어를 선택한 단어로 교체
+    // 마지막 단어를 선택한 단어로 대체
     if (currentWords.length > 0) {
         currentWords[currentWords.length - 1] = word;
     } else {
@@ -560,16 +566,53 @@ document.addEventListener('DOMContentLoaded', async function() {
                 searchLists(query);
             } else {
                 document.getElementById('searchResults').innerHTML = '';
+                selectedIndex = -1;
             }
         });
 
-        // Enter 키 이벤트 처리
-        searchInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                const query = this.value.trim();
-                if (query) {
-                    addNewList();
-                }
+        // 키보드 이벤트 처리
+        searchInput.addEventListener('keydown', function(e) {
+            const searchResults = document.getElementById('searchResults');
+            const items = searchResults.getElementsByClassName('list-item');
+            
+            if (items.length === 0) return;
+            
+            switch(e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    selectedIndex = (selectedIndex + 1) % items.length;
+                    updateSelectedItem(items);
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+                    updateSelectedItem(items);
+                    break;
+                case 'Tab':
+                    e.preventDefault();
+                    if (e.shiftKey) {
+                        selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+                    } else {
+                        selectedIndex = (selectedIndex + 1) % items.length;
+                    }
+                    updateSelectedItem(items);
+                    break;
+                case ' ':
+                    e.preventDefault();
+                    if (selectedIndex >= 0 && selectedIndex < items.length) {
+                        const word = items[selectedIndex].dataset.word;
+                        // 현재 입력된 마지막 단어를 선택한 단어로 대체
+                        const currentWords = this.value.trim().split(' ');
+                        currentWords[currentWords.length - 1] = word;
+                        this.value = currentWords.join(' ');
+                        searchResults.innerHTML = '';
+                        selectedIndex = -1;
+                    }
+                    break;
+                case 'Escape':
+                    searchResults.innerHTML = '';
+                    selectedIndex = -1;
+                    break;
             }
         });
     }
@@ -603,10 +646,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 // 선택된 항목 업데이트
 function updateSelectedItem(items) {
-    items.forEach((item, index) => {
+    Array.from(items).forEach((item, index) => {
         if (index === selectedIndex) {
             item.classList.add('selected');
-            item.scrollIntoView({ block: 'nearest' });
+            item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         } else {
             item.classList.remove('selected');
         }
