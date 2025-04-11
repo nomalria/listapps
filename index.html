@@ -14,10 +14,11 @@
         
         <!-- GitHub 섹션 -->
         <div class="github-section">
-            <button id="githubLoginBtn" class="github-login-btn">
-                <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub Logo" class="github-logo">
-                GitHub로 로그인
-            </button>
+            <div class="auth-buttons">
+                <button onclick="handleGitHubLogin()" class="github-login-btn">
+                    <i class="fab fa-github"></i> GitHub 로그인
+                </button>
+            </div>
             <div class="github-buttons">
                 <button id="uploadGithubBtn" class="github-action-btn">GitHub에 업로드</button>
                 <button id="loadGithubBtn" class="github-action-btn">GitHub에서 불러오기</button>
