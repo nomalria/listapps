@@ -608,4 +608,74 @@ function updateSelectedItem(items) {
             item.classList.remove('selected');
         }
     });
+}
+
+// GitHub에 업로드
+async function uploadToGithub() {
+    try {
+        const token = localStorage.getItem('github_token');
+        if (!token) {
+            alert('GitHub에 로그인해주세요.');
+            return;
+        }
+
+        const data = {
+            lists: lists,
+            temporaryLists: temporaryLists
+        };
+
+        const response = await fetch('/.netlify/functions/upload', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+            throw new Error('업로드 실패');
+        }
+
+        alert('GitHub에 성공적으로 업로드되었습니다.');
+    } catch (error) {
+        console.error('GitHub 업로드 오류:', error);
+        alert('GitHub 업로드 중 오류가 발생했습니다.');
+    }
+}
+
+// GitHub에서 불러오기
+async function loadFromGithub() {
+    try {
+        const token = localStorage.getItem('github_token');
+        if (!token) {
+            alert('GitHub에 로그인해주세요.');
+            return;
+        }
+
+        const response = await fetch('/.netlify/functions/download', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('다운로드 실패');
+        }
+
+        const data = await response.json();
+        lists = data.lists || [];
+        temporaryLists = data.temporaryLists || [];
+        
+        saveLists();
+        renderLists();
+        renderTemporaryLists();
+        updateStats();
+        
+        alert('GitHub에서 성공적으로 불러왔습니다.');
+    } catch (error) {
+        console.error('GitHub 다운로드 오류:', error);
+        alert('GitHub에서 불러오는 중 오류가 발생했습니다.');
+    }
 } 
