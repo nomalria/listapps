@@ -119,29 +119,59 @@ function addNewList() {
     
     if (!title) return;
     
-    // 동일한 방덱이 있는지 확인
-    const existingListIndex = lists.findIndex(list => isSameList(list.title, title));
-    const temporaryListIndex = temporaryLists.findIndex(list => isSameList(list.title, title));
+    // 입력된 단어 개수 확인
+    const words = title.split(' ').filter(w => w);
     
-    if (existingListIndex !== -1) {
-        // 기존 방덱을 임시 목록의 맨 위로 이동
-        const existingList = lists.splice(existingListIndex, 1)[0];
-        temporaryLists.unshift(existingList);
-        renderTemporaryLists();
-    } else if (temporaryListIndex !== -1) {
-        // 임시 목록에 있는 방덱을 맨 위로 이동
-        const existingList = temporaryLists.splice(temporaryListIndex, 1)[0];
-        temporaryLists.unshift(existingList);
-        renderTemporaryLists();
+    if (words.length <= 3) {
+        // 3개 이하의 단어 입력 시
+        // 입력된 단어들을 포함하는 기존 목록들을 찾아서 임시목록으로 옮김
+        const matchingLists = lists.filter(list => 
+            words.every(word => list.title.toLowerCase().includes(word.toLowerCase()))
+        );
+        
+        if (matchingLists.length > 0) {
+            // 매칭되는 목록들을 기존 목록에서 제거하고 임시목록에 추가
+            lists = lists.filter(list => !matchingLists.includes(list));
+            temporaryLists = [...matchingLists, ...temporaryLists];
+            saveLists();
+            renderLists();
+            renderTemporaryLists();
+        } else {
+            // 매칭되는 목록이 없으면 새로 임시목록에 추가
+            const newList = {
+                id: Date.now().toString(),
+                title: title,
+                memos: []
+            };
+            temporaryLists.unshift(newList);
+            renderTemporaryLists();
+        }
     } else {
-        // 새 방덱을 임시 목록에 추가
-        const newList = {
-            id: Date.now().toString(),
-            title: title,
-            memos: []
-        };
-        temporaryLists.unshift(newList);
-        renderTemporaryLists();
+        // 4개 이상의 단어 입력 시
+        // 동일한 방덱이 있는지 확인
+        const existingListIndex = lists.findIndex(list => isSameList(list.title, title));
+        const temporaryListIndex = temporaryLists.findIndex(list => isSameList(list.title, title));
+        
+        if (existingListIndex !== -1) {
+            // 기존 방덱을 임시 목록의 맨 위로 이동
+            const existingList = lists.splice(existingListIndex, 1)[0];
+            temporaryLists.unshift(existingList);
+            renderTemporaryLists();
+        } else if (temporaryListIndex !== -1) {
+            // 임시 목록에 있는 방덱을 맨 위로 이동
+            const existingList = temporaryLists.splice(temporaryListIndex, 1)[0];
+            temporaryLists.unshift(existingList);
+            renderTemporaryLists();
+        } else {
+            // 새 방덱을 임시 목록에 추가
+            const newList = {
+                id: Date.now().toString(),
+                title: title,
+                memos: []
+            };
+            temporaryLists.unshift(newList);
+            renderTemporaryLists();
+        }
     }
     
     searchInput.value = '';
