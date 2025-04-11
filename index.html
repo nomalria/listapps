@@ -69,6 +69,11 @@
             <h2>기존 목록</h2>
             <div id="lists" class="lists-container"></div>
         </div>
+        
+        <div class="list-actions">
+            <button onclick="addNewList()" class="action-button">새 방덱 추가</button>
+            <button onclick="exportLists()" class="action-button">내보내기</button>
+        </div>
     </div>
     
     <!-- GitHub 설정 -->
@@ -158,12 +163,8 @@
             document.getElementById('sortBtn').addEventListener('click', sortAll);
             
             // GitHub 버튼 이벤트 리스너
-            document.getElementById('uploadGithubBtn').addEventListener('click', function() {
-                alert('GitHub 업로드 기능이 준비 중입니다.');
-            });
-            document.getElementById('loadGithubBtn').addEventListener('click', function() {
-                alert('GitHub에서 불러오기 기능이 준비 중입니다.');
-            });
+            document.getElementById('uploadGithubBtn').addEventListener('click', function() {});
+            document.getElementById('loadGithubBtn').addEventListener('click', function() {});
         });
     </script>
 </body>
