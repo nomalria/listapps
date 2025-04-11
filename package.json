@@ -1,0 +1,16 @@
+{
+  "name": "listapps",
+  "version": "1.0.0",
+  "description": "방덱 목록 관리 애플리케이션",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@netlify/functions": "^2.0.0",
+    "node-fetch": "^2.6.7"
+  },
+  "devDependencies": {
+    "netlify-cli": "^12.0.0"
+  }
+} 

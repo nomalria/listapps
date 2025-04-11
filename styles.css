@@ -545,4 +545,52 @@ button:hover {
     color: #2E7D32;
     margin-bottom: 15px;
     text-align: center;
+}
+
+/* GitHub 로그인 버튼 */
+.github-login-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 20px;
+    background-color: #24292e;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.github-login-btn:hover {
+    background-color: #2f363d;
+}
+
+.github-logo {
+    width: 20px;
+    height: 20px;
+}
+
+.github-action-btn {
+    padding: 10px 20px;
+    background-color: #2ea44f;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.github-action-btn:hover {
+    background-color: #2c974b;
+}
+
+.github-action-btn:last-child {
+    margin-bottom: 0;
 } 

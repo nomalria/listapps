@@ -14,12 +14,13 @@
         
         <!-- GitHub 섹션 -->
         <div class="github-section">
-            <div class="input-group">
-                <input type="password" id="githubToken" placeholder="GitHub 토큰 입력">
-            </div>
+            <button id="githubLoginBtn" class="github-login-btn">
+                <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub Logo" class="github-logo">
+                GitHub로 로그인
+            </button>
             <div class="github-buttons">
-                <button id="uploadGithubBtn">GitHub에 업로드</button>
-                <button id="loadGithubBtn">GitHub에서 불러오기</button>
+                <button id="uploadGithubBtn" class="github-action-btn">GitHub에 업로드</button>
+                <button id="loadGithubBtn" class="github-action-btn">GitHub에서 불러오기</button>
             </div>
         </div>
         
@@ -72,6 +73,53 @@
         const GITHUB_USERNAME = 'nomalria';
         const GITHUB_REPO = 'listapps';
         const DATA_FILE = 'lists.json';
+        
+        // GitHub OAuth 관련 코드
+        const GITHUB_CLIENT_ID = 'Ov23liUbHbAVOH1dBqrp';
+        const GITHUB_REDIRECT_URI = window.location.origin;
+        
+        function handleGitHubLogin() {
+            const state = Math.random().toString(36).substring(2);
+            localStorage.setItem('github_state', state);
+            
+            const url = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${GITHUB_REDIRECT_URI}&state=${state}&scope=repo`;
+            window.location.href = url;
+        }
+
+        async function handleGitHubCallback() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const state = urlParams.get('state');
+            const savedState = localStorage.getItem('github_state');
+
+            if (code && state && state === savedState) {
+                try {
+                    const response = await fetch('/.netlify/functions/auth', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ code }),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('GitHub 인증 실패');
+                    }
+
+                    const data = await response.json();
+                    localStorage.setItem('github_token', data.access_token);
+                    window.location.href = GITHUB_REDIRECT_URI;
+                } catch (error) {
+                    console.error('GitHub 인증 오류:', error);
+                    alert('GitHub 인증 중 오류가 발생했습니다.');
+                }
+            }
+        }
+
+        // 페이지 로드 시 GitHub 콜백 처리
+        if (window.location.search.includes('code=')) {
+            handleGitHubCallback();
+        }
     </script>
     
     <!-- 메인 스크립트 -->

@@ -13,6 +13,11 @@ let selectedIndex = -1;
 let editingListId = null;
 let editingMemoId = null;
 
+// GitHub OAuth 설정
+const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
+const GITHUB_REDIRECT_URI = `${window.location.origin}/callback`;
+const GITHUB_AUTH_URL = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${GITHUB_REDIRECT_URI}&scope=repo`;
+
 // 방덱 목록 불러오기
 function loadLists() {
     const savedLists = localStorage.getItem('lists');
@@ -653,9 +658,52 @@ function cancelMemoEdit(listId, memoId, isTemporary = false) {
     editingMemoId = null;
 }
 
+// GitHub 로그인
+function handleGitHubLogin() {
+    window.location.href = GITHUB_AUTH_URL;
+}
+
+// GitHub 토큰 가져오기
+async function getGitHubToken() {
+    const code = new URLSearchParams(window.location.search).get('code');
+    if (!code) return null;
+
+    try {
+        const response = await fetch('/.netlify/functions/auth', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ code }),
+        });
+
+        if (!response.ok) {
+            throw new Error('토큰을 가져오는데 실패했습니다.');
+        }
+
+        const data = await response.json();
+        return data.access_token;
+    } catch (error) {
+        console.error('토큰 가져오기 오류:', error);
+        return null;
+    }
+}
+
 // 페이지 로드 시 이벤트 리스너 추가
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+    // 초기 데이터 로드
     loadLists();
+    
+    // GitHub 로그인 버튼 이벤트 리스너
+    document.getElementById('githubLoginBtn').addEventListener('click', handleGitHubLogin);
+    
+    // GitHub 토큰 확인
+    const token = await getGitHubToken();
+    if (token) {
+        window.GITHUBTOKEN = token;
+        // URL에서 code 파라미터 제거
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
     
     // 검색 입력 필드에 이벤트 리스너 추가
     document.getElementById('searchInput').addEventListener('input', function() {
@@ -664,51 +712,24 @@ document.addEventListener('DOMContentLoaded', function() {
             searchLists(query);
         } else {
             document.getElementById('searchResults').innerHTML = '';
-            selectedIndex = -1;
-        }
-    });
-    
-    // 키보드 이벤트 처리
-    document.getElementById('searchInput').addEventListener('keydown', function(e) {
-        const searchResults = document.getElementById('searchResults');
-        const items = searchResults.querySelectorAll('.list-item');
-        
-        if (items.length === 0) return;
-        
-        switch(e.key) {
-            case 'Tab':
-            case 'ArrowDown':
-                e.preventDefault();
-                selectedIndex = (selectedIndex + 1) % items.length;
-                updateSelectedItem(items);
-                break;
-                
-            case 'ArrowUp':
-                e.preventDefault();
-                selectedIndex = (selectedIndex - 1 + items.length) % items.length;
-                updateSelectedItem(items);
-                break;
-                
-            case ' ':
-                const selectedItem = searchResults.querySelector('.list-item.selected');
-                if (selectedItem) {
-                    e.preventDefault();
-                    const word = selectedItem.getAttribute('data-word');
-                    selectWord(word);
-                }
-                break;
         }
     });
     
     // Enter 키 이벤트 처리
     document.getElementById('searchInput').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
-            addNewList();
+            const query = this.value.trim();
+            if (query) {
+                addNewList();
+            }
         }
     });
     
     // 추가 버튼 이벤트 리스너
     document.getElementById('addListBtn').addEventListener('click', addNewList);
+    
+    // 정렬 버튼 이벤트 리스너
+    document.getElementById('sortBtn').addEventListener('click', sortAll);
     
     // GitHub 버튼 이벤트 리스너
     document.getElementById('uploadGithubBtn').addEventListener('click', uploadToGithub);
