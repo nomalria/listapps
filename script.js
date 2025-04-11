@@ -729,6 +729,11 @@ async function loadFromGithub() {
             return;
         }
 
+        // 확인 메시지 표시
+        if (!confirm('GitHub에 저장된 목록을 불러오겠습니까?')) {
+            return;
+        }
+
         const response = await fetch('/api/download', {
             method: 'GET',
             headers: {
