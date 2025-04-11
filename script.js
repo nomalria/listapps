@@ -596,6 +596,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (loadGithubBtn) {
         loadGithubBtn.addEventListener('click', loadFromGithub);
     }
+
+    // GitHub 로그인 상태 확인
+    checkGitHubLoginStatus();
 });
 
 // 선택된 항목 업데이트
@@ -677,5 +680,78 @@ async function loadFromGithub() {
     } catch (error) {
         console.error('GitHub 다운로드 오류:', error);
         alert('GitHub에서 불러오는 중 오류가 발생했습니다.');
+    }
+}
+
+// GitHub 로그인 상태 확인 및 UI 업데이트
+async function checkGitHubLoginStatus() {
+    const token = localStorage.getItem('github_token');
+    const loginBtn = document.getElementById('githubLoginBtn');
+    const statusDiv = document.getElementById('githubStatus');
+    const usernameSpan = document.getElementById('githubUsername');
+
+    if (token) {
+        try {
+            const response = await fetch('https://api.github.com/user', {
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'User-Agent': 'Your-App-Name'
+                }
+            });
+
+            if (response.ok) {
+                const userData = await response.json();
+                loginBtn.style.display = 'none';
+                statusDiv.style.display = 'flex';
+                usernameSpan.textContent = userData.login;
+            } else {
+                throw new Error('GitHub API request failed');
+            }
+        } catch (error) {
+            console.error('GitHub 사용자 정보 가져오기 실패:', error);
+            handleGitHubLogout();
+        }
+    } else {
+        loginBtn.style.display = 'flex';
+        statusDiv.style.display = 'none';
+    }
+}
+
+// GitHub 로그아웃
+function handleGitHubLogout() {
+    localStorage.removeItem('github_token');
+    checkGitHubLoginStatus();
+    alert('GitHub에서 로그아웃되었습니다.');
+}
+
+// GitHub 콜백 처리 후 로그인 상태 확인
+async function handleGitHubCallback() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
+    const savedState = localStorage.getItem('github_state');
+
+    if (code && state && state === savedState) {
+        try {
+            const response = await fetch('/.netlify/functions/auth', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ code }),
+            });
+
+            if (!response.ok) {
+                throw new Error('GitHub 인증 실패');
+            }
+
+            const data = await response.json();
+            localStorage.setItem('github_token', data.access_token);
+            checkGitHubLoginStatus();
+            window.location.href = GITHUB_REDIRECT_URI;
+        } catch (error) {
+            console.error('GitHub 인증 오류:', error);
+            alert('GitHub 인증 중 오류가 발생했습니다.');
+        }
     }
 } 

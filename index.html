@@ -15,9 +15,16 @@
         <!-- GitHub 섹션 -->
         <div class="github-section">
             <div class="auth-buttons">
-                <button onclick="handleGitHubLogin()" class="github-login-btn">
+                <button onclick="handleGitHubLogin()" class="github-login-btn" id="githubLoginBtn">
                     <i class="fab fa-github"></i> GitHub 로그인
                 </button>
+                <div id="githubStatus" class="github-status" style="display: none;">
+                    <span class="github-user-info">
+                        <i class="fab fa-github"></i>
+                        <span id="githubUsername"></span>
+                    </span>
+                    <button onclick="handleGitHubLogout()" class="github-logout-btn">로그아웃</button>
+                </div>
             </div>
             <div class="github-buttons">
                 <button id="uploadGithubBtn" class="github-action-btn">GitHub에 업로드</button>
