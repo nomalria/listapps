@@ -124,10 +124,13 @@ function addNewList() {
     
     if (words.length <= 3) {
         // 3개 이하의 단어 입력 시
-        // 입력된 단어들을 포함하는 기존 목록들을 찾아서 임시목록으로 옮김
-        const matchingLists = lists.filter(list => 
-            words.every(word => list.title.toLowerCase().includes(word.toLowerCase()))
-        );
+        // 입력된 모든 단어가 포함된 목록들을 찾아서 임시목록으로 옮김
+        const matchingLists = lists.filter(list => {
+            const listWords = list.title.toLowerCase().split(' ');
+            return words.every(word => 
+                listWords.some(listWord => listWord.includes(word.toLowerCase()))
+            );
+        });
         
         if (matchingLists.length > 0) {
             // 매칭되는 목록들을 기존 목록에서 제거하고 임시목록에 추가
