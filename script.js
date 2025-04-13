@@ -18,6 +18,7 @@ function loadLists() {
     const savedLists = localStorage.getItem('lists');
     if (savedLists) {
         lists = JSON.parse(savedLists);
+        console.log('로드된 목록:', lists);
         renderLists();
         updateStats();
     }
@@ -40,6 +41,9 @@ function searchLists(query) {
         return;
     }
 
+    console.log('검색어:', query);
+    console.log('전체 목록:', lists);
+
     // 현재 입력된 단어들을 가져옴
     const currentWords = query.split(' ').filter(w => w);
     const lastWord = currentWords[currentWords.length - 1];
@@ -48,14 +52,25 @@ function searchLists(query) {
     const allWords = new Set();
     lists.forEach(list => {
         const words = list.title.split(' ');
-        words.forEach(word => allWords.add(word));
+        words.forEach(word => {
+            const trimmedWord = word.trim();
+            if (trimmedWord) {
+                allWords.add(trimmedWord);
+            }
+        });
     });
 
+    console.log('추출된 단어들:', Array.from(allWords));
+
     // 검색어와 일치하는 단어들 찾기 (마지막 단어와 일치하는 것만)
-    const matchingWords = Array.from(allWords).filter(word => 
-        word.toLowerCase().includes(lastWord.toLowerCase()) &&
-        !currentWords.includes(word) // 이미 입력된 단어는 제외
-    );
+    const matchingWords = Array.from(allWords).filter(word => {
+        const matches = word.toLowerCase().includes(lastWord.toLowerCase()) &&
+                       !currentWords.includes(word);
+        console.log(`단어 "${word}" 검색 결과:`, matches);
+        return matches;
+    });
+
+    console.log('매칭된 단어들:', matchingWords);
 
     if (matchingWords.length > 0) {
         searchResults.innerHTML = matchingWords.map((word, index) => `
@@ -67,7 +82,6 @@ function searchLists(query) {
             </div>
         `).join('');
         
-        // 검색 결과가 표시될 때 첫 번째 항목을 선택
         if (selectedIndex === -1 && matchingWords.length > 0) {
             selectedIndex = 0;
             updateSelectedItem(searchResults.getElementsByClassName('list-item'));
@@ -126,9 +140,11 @@ function addNewList() {
         // 3개 이하의 단어 입력 시
         // 입력된 모든 단어가 포함된 목록들을 찾아서 임시목록으로 옮김
         const matchingLists = lists.filter(list => {
-            const listWords = list.title.toLowerCase().split(' ');
+            const listWords = list.title.split(' ').filter(w => w);
             return words.every(word => 
-                listWords.some(listWord => listWord.includes(word.toLowerCase()))
+                listWords.some(listWord => 
+                    listWord.toLowerCase().includes(word.toLowerCase())
+                )
             );
         });
         
@@ -697,6 +713,9 @@ async function uploadToGithub() {
             alert('GitHub에 로그인해주세요.');
             return;
         }
+
+        // 정렬 기능 실행
+        sortAll();
 
         const data = {
             lists: lists,
