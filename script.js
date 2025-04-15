@@ -2,6 +2,7 @@
 let lists = [];
 let temporaryLists = [];
 let currentListId = null;
+let currentFilterType = 'all'; // 현재 활성화된 필터 타입 ('all', '4방덱', '5방덱', '기타')
 
 // 삭제 확인을 위한 타이머 객체
 const deleteTimers = {};
@@ -321,7 +322,18 @@ function deleteMemo(listId, memoId, isTemporary = false) {
 // 방덱 목록 렌더링
 function renderLists() {
     const listsContainer = document.getElementById('lists');
-    listsContainer.innerHTML = lists.map(list => `
+    
+    // 현재 필터 타입에 따라 목록 필터링
+    let filteredLists = lists;
+    if (currentFilterType === '4방덱') {
+        filteredLists = lists.filter(list => list.title.startsWith('4방덱'));
+    } else if (currentFilterType === '5방덱') {
+        filteredLists = lists.filter(list => list.title.startsWith('5방덱'));
+    } else if (currentFilterType === '기타') {
+        filteredLists = lists.filter(list => !list.title.startsWith('4방덱') && !list.title.startsWith('5방덱'));
+    } // 'all'일 경우 모든 목록 표시 (기본값)
+
+    listsContainer.innerHTML = filteredLists.map(list => `
         <div class="list-item" data-list-id="${list.id}">
             <div class="list-title">
                 <span class="list-title-text">${list.title}</span>
@@ -703,6 +715,24 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (loadGithubBtn) {
         loadGithubBtn.addEventListener('click', loadFromGithub);
     }
+
+    // 통계 항목 클릭 이벤트 리스너 추가
+    document.querySelectorAll('.stats-section .stat-item').forEach(item => {
+        item.addEventListener('click', function() {
+            currentFilterType = this.dataset.filterType;
+            console.log('Filter changed to:', currentFilterType);
+            
+            // 모든 항목에서 'selected' 클래스 제거
+            document.querySelectorAll('.stats-section .stat-item').forEach(el => el.classList.remove('selected'));
+            // 클릭된 항목에 'selected' 클래스 추가
+            this.classList.add('selected');
+            
+            renderLists(); // 필터링된 목록 다시 렌더링
+        });
+    });
+
+    // 초기에 '전체 보기'를 선택된 상태로 설정
+    document.getElementById('stat-item-all')?.classList.add('selected');
 
     // GitHub 로그인 상태 확인
     checkGitHubLoginStatus();

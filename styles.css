@@ -30,25 +30,58 @@ h1 {
 /* 통계 섹션 */
 .stats-section {
     display: flex;
-    justify-content: space-around;
-    margin-bottom: 20px;
-    padding: 15px;
-    background-color: #F1F8E9;
-    border-radius: 6px;
+    justify-content: center;
+    gap: 30px;
+    margin-bottom: 15px;
 }
 
 .stat-item {
-    text-align: center;
+    padding: 8px 15px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    background-color: #f0f0f0;
+    cursor: pointer;
+    transition: background-color 0.3s, box-shadow 0.3s;
+    font-size: 0.9em;
+    display: inline-flex;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.stat-label {
+.stat-item:hover {
+    background-color: #e0e0e0;
+}
+
+.stat-item .stat-label {
+    margin-right: 5px;
+}
+
+.stat-item .stat-value {
     font-weight: bold;
-    color: #2E7D32;
+    background-color: #ddd;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 0.9em;
 }
 
-.stat-value {
-    font-size: 1.2em;
-    margin-left: 5px;
+.stat-item.all-items .stat-value {
+    display: none;
+}
+
+.stat-item.selected {
+    background-color: #007bff;
+    color: white;
+    border-color: #0056b3;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
+
+.stat-item.selected .stat-label,
+.stat-item.selected .stat-value {
+    color: white;
+}
+
+.stat-item.selected .stat-value {
+    background-color: #0056b3;
 }
 
 /* 통합 검색/추가 섹션 */
