@@ -875,7 +875,16 @@ async function uploadToGithub() {
             if (existingIndex === -1) {
                 mergedLists.push(tempList);
             } else {
-                mergedLists[existingIndex] = tempList;
+                // 메모 변경사항만 병합
+                const existingList = mergedLists[existingIndex];
+                tempList.memos.forEach(tempMemo => {
+                    const existingMemoIndex = existingList.memos.findIndex(m => m.id === tempMemo.id);
+                    if (existingMemoIndex === -1) {
+                        existingList.memos.push(tempMemo);
+                    } else if (tempMemo.lastModified > existingList.memos[existingMemoIndex].lastModified) {
+                        existingList.memos[existingMemoIndex] = tempMemo;
+                    }
+                });
             }
         });
 
@@ -939,7 +948,7 @@ async function uploadToGithub() {
     }
 }
 
-// GitHub에서 불러오기
+// GitHub에서 불러오기 함수 수정
 async function loadFromGithub() {
     try {
         const token = localStorage.getItem('github_token');
@@ -984,7 +993,7 @@ async function loadFromGithub() {
     }
 }
 
-// 데이터 병합 함수
+// 데이터 병합 함수 수정
 function mergeLists(currentLists, githubLists) {
     const merged = [...githubLists];
 
@@ -996,10 +1005,18 @@ function mergeLists(currentLists, githubLists) {
             // GitHub에 없는 새 목록 추가
             merged.push(currentList);
         } else {
-            // 수정된 목록이 있다면 최신 버전으로 업데이트
-            if (currentList.lastModified > merged[existingIndex].lastModified) {
-                merged[existingIndex] = currentList;
-            }
+            // 메모 병합
+            const existingList = merged[existingIndex];
+            currentList.memos.forEach(currentMemo => {
+                const existingMemoIndex = existingList.memos.findIndex(m => m.id === currentMemo.id);
+                if (existingMemoIndex === -1) {
+                    // 새 메모 추가
+                    existingList.memos.push(currentMemo);
+                } else if (currentMemo.lastModified > existingList.memos[existingMemoIndex].lastModified) {
+                    // 최신 메모로 업데이트
+                    existingList.memos[existingMemoIndex] = currentMemo;
+                }
+            });
         }
     });
 
