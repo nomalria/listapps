@@ -999,14 +999,15 @@ function mergeLists(currentLists, githubLists) {
 
     // 현재 클라이언트의 데이터와 비교하여 병합
     currentLists.forEach(currentList => {
-        const existingIndex = merged.findIndex(g => g.id === currentList.id);
+        // 같은 단어 배열을 가진 목록이 있는지 확인
+        const existingListIndex = merged.findIndex(g => isSameList(g.title, currentList.title));
         
-        if (existingIndex === -1) {
+        if (existingListIndex === -1) {
             // GitHub에 없는 새 목록 추가
             merged.push(currentList);
         } else {
             // 메모 병합
-            const existingList = merged[existingIndex];
+            const existingList = merged[existingListIndex];
             currentList.memos.forEach(currentMemo => {
                 const existingMemoIndex = existingList.memos.findIndex(m => m.id === currentMemo.id);
                 if (existingMemoIndex === -1) {
