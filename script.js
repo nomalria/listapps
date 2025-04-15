@@ -584,11 +584,26 @@ function sortAll() {
     // 임시 목록의 항목들을 기존 목록에 추가
     lists = [...temporaryLists, ...lists];
     
-    // 단어 순으로 정렬
+    // 단어 순으로 목록 정렬
     lists.sort((a, b) => {
         const wordsA = a.title.split(' ');
         const wordsB = b.title.split(' ');
-        return wordsA[0].localeCompare(wordsB[0]) || wordsA[1].localeCompare(wordsB[1]);
+        // 제목의 첫 두 단어를 기준으로 정렬
+        const compareResult = wordsA[0].localeCompare(wordsB[0]) || wordsA[1].localeCompare(wordsB[1]);
+        if (compareResult !== 0) {
+            return compareResult;
+        }
+        // 제목이 같으면 ID를 기준으로 정렬 (안정 정렬 보장)
+        return a.id.toString().localeCompare(b.id.toString());
+    });
+
+    // 각 목록 내 메모를 텍스트 순으로 정렬
+    lists.forEach(list => {
+        if (list.memos && list.memos.length > 1) {
+            list.memos.sort((memoA, memoB) => {
+                return memoA.text.localeCompare(memoB.text);
+            });
+        }
     });
     
     // 임시 목록 비우기
