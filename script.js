@@ -569,10 +569,17 @@ function saveMemoEdit(listId, memoId, isTemporary = false) {
             memo.text = newText;
             memo.lastModified = new Date().toISOString();
             list.lastModified = new Date().toISOString();
+            
+            // 로컬 저장소에 저장
             if (!isTemporary) {
                 saveLists();
             }
+            
+            // UI 업데이트
             isTemporary ? renderTemporaryLists() : renderLists();
+            
+            // GitHub에 업로드
+            uploadToGithub();
         } else {
             console.error('메모를 찾을 수 없습니다:', memoId);
         }
@@ -1008,19 +1015,21 @@ function mergeLists(currentLists, githubLists) {
         } else {
             // 메모 병합
             const existingList = merged[existingListIndex];
-            currentList.memos.forEach(currentMemo => {
-                const existingMemoIndex = existingList.memos.findIndex(m => m.id === currentMemo.id);
-                if (existingMemoIndex === -1) {
-                    // 새 메모 추가
-                    existingList.memos.push(currentMemo);
-                } else {
-                    // 최신 메모로 업데이트 (lastModified 비교)
-                    const existingMemo = existingList.memos[existingMemoIndex];
-                    if (new Date(currentMemo.lastModified) > new Date(existingMemo.lastModified)) {
-                        existingList.memos[existingMemoIndex] = currentMemo;
-                    }
+            
+            // GitHub의 메모를 우선적으로 사용
+            const githubMemos = existingList.memos;
+            const currentMemos = currentList.memos;
+            
+            // GitHub에 있는 메모 중 현재 클라이언트에 없는 메모는 유지
+            // 현재 클라이언트의 메모 중 GitHub에 없는 메모는 추가
+            const finalMemos = [...githubMemos];
+            currentMemos.forEach(currentMemo => {
+                if (!githubMemos.some(githubMemo => githubMemo.id === currentMemo.id)) {
+                    finalMemos.push(currentMemo);
                 }
             });
+            
+            existingList.memos = finalMemos;
         }
     });
 
