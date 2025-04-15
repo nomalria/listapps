@@ -591,12 +591,19 @@ function cancelMemoEdit(listId, memoId, isTemporary = false) {
     editingMemoId = null;
 }
 
-// 목록 및 메모 정렬
+// 목록 및 메모 정렬 (중복 덮어쓰기 로직 추가)
 function sortAll() {
-    // 임시 목록의 항목들을 기존 목록에 추가
-    lists = [...temporaryLists, ...lists];
+    // 1. 임시 목록의 제목을 키로 하는 맵 생성 (덮어쓰기 확인용)
+    const tempMap = new Map();
+    temporaryLists.forEach(item => tempMap.set(item.title, item));
+
+    // 2. 기존 목록에서 임시 목록과 중복되는 항목 제거
+    lists = lists.filter(list => !tempMap.has(list.title));
+
+    // 3. 필터링된 기존 목록과 임시 목록 병합
+    lists = [...lists, ...temporaryLists];
     
-    // 단어 순으로 목록 정렬
+    // 4. 단어 순으로 목록 정렬
     lists.sort((a, b) => {
         const wordsA = a.title.split(' ');
         const wordsB = b.title.split(' ');
@@ -609,7 +616,7 @@ function sortAll() {
         return a.id.toString().localeCompare(b.id.toString());
     });
 
-    // 각 목록 내 메모를 텍스트 순으로 정렬
+    // 5. 각 목록 내 메모를 텍스트 순으로 정렬
     lists.forEach(list => {
         if (list.memos && list.memos.length > 1) {
             list.memos.sort((memoA, memoB) => {
@@ -618,10 +625,10 @@ function sortAll() {
         }
     });
     
-    // 임시 목록 비우기
+    // 6. 임시 목록 비우기
     temporaryLists = [];
     
-    // 목록 저장 및 렌더링
+    // 7. 목록 저장 및 렌더링
     saveLists();
     renderLists();
     renderTemporaryLists();
@@ -750,58 +757,75 @@ function updateSelectedItem(items) {
     });
 }
 
-// GitHub에 업로드
+// GitHub에 업로드 (조건부 로직 추가)
 async function uploadToGithub() {
+    const token = localStorage.getItem('github_token');
+    if (!token) {
+        alert('GitHub에 로그인해주세요.');
+        return;
+    }
+
+    let uploadEndpoint = '';
+    let dataToUpload = {};
+    let successMessage = '';
+
+    if (temporaryLists.length > 0) {
+        // 임시 목록이 있을 경우: 변경사항만 업로드
+        uploadEndpoint = '/api/upload_changes'; // *** 백엔드 엔드포인트 (변경사항용) ***
+        dataToUpload = { temporaryLists: temporaryLists };
+        successMessage = '변경사항이 GitHub에 성공적으로 업로드되었습니다.';
+        console.log('Uploading changes:', temporaryLists);
+    } else {
+        // 임시 목록이 없을 경우: 기존 목록 전체 업로드
+        uploadEndpoint = '/api/upload_main'; // *** 백엔드 엔드포인트 (전체 목록용) ***
+        dataToUpload = { lists: lists }; 
+        successMessage = '기존 목록 전체가 GitHub에 성공적으로 업로드되었습니다.';
+        console.log('Uploading main list:', lists);
+    }
+
     try {
-        const token = localStorage.getItem('github_token');
-        if (!token) {
-            alert('GitHub에 로그인해주세요.');
-            return;
-        }
-
-        // 정렬 기능 실행
-        sortAll();
-
-        const data = {
-            lists: lists,
-            temporaryLists: temporaryLists
-        };
-
-        const response = await fetch('/api/upload', {
+        const response = await fetch(uploadEndpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify(dataToUpload)
         });
 
         if (!response.ok) {
-            throw new Error('업로드 실패');
+            const errorData = await response.json().catch(() => ({})); // 오류 응답 파싱 시도
+            throw new Error(`업로드 실패: ${response.status} ${response.statusText} ${errorData.message || ''}`.trim());
         }
 
-        alert('GitHub에 성공적으로 업로드되었습니다.');
+        // 변경사항 업로드 성공 시 임시 목록 비우기 (선택사항)
+        if (temporaryLists.length > 0) {
+             temporaryLists = [];
+             renderTemporaryLists();
+        }
+
+        alert(successMessage);
+
     } catch (error) {
         console.error('GitHub 업로드 오류:', error);
-        alert('GitHub 업로드 중 오류가 발생했습니다.');
+        alert(`GitHub 업로드 중 오류가 발생했습니다: ${error.message}`);
     }
 }
 
-// GitHub에서 불러오기
-async function loadFromGithub() {
+// GitHub에서 변경사항만 불러오기
+async function loadChangesFromGithub() {
+    const token = localStorage.getItem('github_token');
+    if (!token) {
+        alert('GitHub에 로그인해주세요.');
+        return;
+    }
+
+    if (!confirm('GitHub에 저장된 변경사항만 불러오겠습니까? 현재 임시 목록은 덮어쓰여집니다.')) {
+        return;
+    }
+
     try {
-        const token = localStorage.getItem('github_token');
-        if (!token) {
-            alert('GitHub에 로그인해주세요.');
-            return;
-        }
-
-        // 확인 메시지 표시
-        if (!confirm('GitHub에 저장된 목록을 불러오겠습니까?')) {
-            return;
-        }
-
-        const response = await fetch('/api/download', {
+        const response = await fetch('/api/download_changes', { // *** 백엔드 엔드포인트 (변경사항 다운로드) ***
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -809,22 +833,63 @@ async function loadFromGithub() {
         });
 
         if (!response.ok) {
-            throw new Error('다운로드 실패');
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(`다운로드 실패: ${response.status} ${response.statusText} ${errorData.message || ''}`.trim());
+        }
+
+        const data = await response.json(); 
+        // 서버가 { temporaryLists: [...] } 형태로 응답한다고 가정
+        temporaryLists = data.temporaryLists || []; 
+        
+        renderTemporaryLists(); // 임시 목록만 다시 렌더링
+        alert('GitHub에서 변경사항을 성공적으로 불러왔습니다.');
+
+    } catch (error) {
+        console.error('GitHub 변경사항 다운로드 오류:', error);
+        alert(`GitHub 변경사항 불러오는 중 오류가 발생했습니다: ${error.message}`);
+    }
+}
+
+// GitHub에서 전체 데이터 불러오기
+async function loadAllFromGithub() {
+    const token = localStorage.getItem('github_token');
+    if (!token) {
+        alert('GitHub에 로그인해주세요.');
+        return;
+    }
+
+    if (!confirm('GitHub에 저장된 전체 목록을 불러오겠습니까? 현재 모든 로컬 데이터는 덮어쓰여집니다.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/download_all', { // *** 백엔드 엔드포인트 (전체 다운로드) ***
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(`다운로드 실패: ${response.status} ${response.statusText} ${errorData.message || ''}`.trim());
         }
 
         const data = await response.json();
+        // 서버가 { lists: [...], temporaryLists: [...] } 형태로 응답한다고 가정
         lists = data.lists || [];
         temporaryLists = data.temporaryLists || [];
         
-        saveLists();
+        saveLists(); // 기존 목록 로컬 스토리지에 저장
         renderLists();
         renderTemporaryLists();
         updateStats();
         
-        alert('GitHub에서 성공적으로 불러왔습니다.');
+        alert('GitHub에서 전체 목록을 성공적으로 불러왔습니다.');
+
     } catch (error) {
-        console.error('GitHub 다운로드 오류:', error);
-        alert('GitHub에서 불러오는 중 오류가 발생했습니다.');
+        console.error('GitHub 전체 다운로드 오류:', error);
+        alert(`GitHub 전체 목록 불러오는 중 오류가 발생했습니다: ${error.message}`);
     }
 }
 

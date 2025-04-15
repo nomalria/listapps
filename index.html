@@ -28,7 +28,8 @@
             </div>
             <div class="github-buttons">
                 <button id="uploadGithubBtn" class="github-action-btn">GitHub에 업로드</button>
-                <button id="loadGithubBtn" class="github-action-btn">GitHub에서 불러오기</button>
+                <button id="loadChangesBtn" class="github-action-btn">변경사항만 불러오기</button>
+                <button id="loadAllBtn" class="github-action-btn">전체 불러오기</button>
             </div>
         </div>
         
@@ -161,8 +162,9 @@
             document.getElementById('sortBtn').addEventListener('click', sortAll);
             
             // GitHub 버튼 이벤트 리스너
-            document.getElementById('uploadGithubBtn').addEventListener('click', function() {});
-            document.getElementById('loadGithubBtn').addEventListener('click', function() {});
+            document.getElementById('uploadGithubBtn').addEventListener('click', uploadToGithub);
+            document.getElementById('loadChangesBtn').addEventListener('click', loadChangesFromGithub);
+            document.getElementById('loadAllBtn').addEventListener('click', loadAllFromGithub);
         });
     </script>
 </body>
