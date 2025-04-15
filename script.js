@@ -982,8 +982,16 @@ async function loadFromGithub() {
         // 현재 데이터와 GitHub 데이터 병합
         const mergedLists = mergeLists([...lists, ...temporaryLists], githubLists);
 
+        // 중복 목록 제거
+        const uniqueLists = [];
+        mergedLists.forEach(list => {
+            if (!uniqueLists.some(uniqueList => isSameList(uniqueList.title, list.title))) {
+                uniqueLists.push(list);
+            }
+        });
+
         // 병합된 데이터로 업데이트
-        lists = mergedLists;
+        lists = uniqueLists;
         temporaryLists = [];  // temporaryLists 초기화
         lastSyncedLists = [...lists];
         lastSyncTime = new Date().toISOString();
