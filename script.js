@@ -849,6 +849,16 @@ function applyModifications(list, changes) {
     return updatedList;
 }
 
+// base64 인코딩 함수 수정
+function encodeBase64(str) {
+    return btoa(unescape(encodeURIComponent(str)));
+}
+
+// base64 디코딩 함수 수정
+function decodeBase64(str) {
+    return decodeURIComponent(escape(atob(str)));
+}
+
 // GitHub 업로드 함수 수정
 async function uploadToGithub() {
     try {
@@ -890,7 +900,7 @@ async function uploadToGithub() {
         }
 
         const fileData = await response.json();
-        const currentLists = JSON.parse(atob(fileData.content));
+        const currentLists = JSON.parse(decodeBase64(fileData.content));
         
         // 변경사항 적용
         const updatedLists = applyChanges(currentLists, changes);
@@ -905,7 +915,7 @@ async function uploadToGithub() {
             },
             body: JSON.stringify({
                 message: 'Update lists.json with changes',
-                content: btoa(JSON.stringify(updatedLists)),
+                content: encodeBase64(JSON.stringify(updatedLists)),
                 sha: fileData.sha
             })
         });
@@ -951,7 +961,7 @@ async function loadFromGithub() {
         }
 
         const fileData = await response.json();
-        const githubLists = JSON.parse(atob(fileData.content));
+        const githubLists = JSON.parse(decodeBase64(fileData.content));
 
         // 현재 데이터와 GitHub 데이터 병합
         const mergedLists = mergeLists([...lists, ...temporaryLists], githubLists);
