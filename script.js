@@ -13,10 +13,6 @@ let selectedIndex = -1;
 let editingListId = null;
 let editingMemoId = null;
 
-// 변경사항 추적을 위한 전역 변수 추가
-let lastSyncedLists = [];
-let lastSyncTime = null;
-
 // 방덱 목록 불러오기
 function loadLists() {
     const savedLists = localStorage.getItem('lists');
@@ -164,8 +160,7 @@ function addNewList() {
             const newList = {
                 id: Date.now().toString(),
                 title: title,
-                memos: [],
-                lastModified: new Date().toISOString()
+                memos: []
             };
             temporaryLists.unshift(newList);
             renderTemporaryLists();
@@ -191,8 +186,7 @@ function addNewList() {
             const newList = {
                 id: Date.now().toString(),
                 title: title,
-                memos: [],
-                lastModified: new Date().toISOString()
+                memos: []
             };
             temporaryLists.unshift(newList);
             renderTemporaryLists();
@@ -296,13 +290,10 @@ function addMemo(listId, isTemporary = false) {
                 alert('한 방덱에는 최대 50개의 메모만 추가할 수 있습니다.');
                 return;
             }
-            const newMemo = {
+            list.memos.push({
                 id: Date.now().toString(),
-                text: memoText,
-                lastModified: new Date().toISOString()
-            };
-            list.memos.push(newMemo);
-            list.lastModified = new Date().toISOString();
+                text: memoText
+            });
             if (!isTemporary) {
                 saveLists();
             }
@@ -319,7 +310,6 @@ function deleteMemo(listId, memoId, isTemporary = false) {
         const list = targetLists.find(l => l.id.toString() === listId.toString());
         if (list) {
             list.memos = list.memos.filter(memo => memo.id.toString() !== memoId.toString());
-            list.lastModified = new Date().toISOString();
             if (!isTemporary) {
                 saveLists();
             }
@@ -496,7 +486,6 @@ function saveListEdit(listId, isTemporary = false) {
     const list = targetLists.find(l => l.id.toString() === listId.toString());
     if (list) {
         list.title = newTitle;
-        list.lastModified = new Date().toISOString();
         if (!isTemporary) {
             saveLists();
         }
@@ -567,19 +556,10 @@ function saveMemoEdit(listId, memoId, isTemporary = false) {
         const memo = list.memos.find(m => m.id.toString() === memoId.toString());
         if (memo) {
             memo.text = newText;
-            memo.lastModified = new Date().toISOString();
-            list.lastModified = new Date().toISOString();
-            
-            // 로컬 저장소에 저장
             if (!isTemporary) {
                 saveLists();
             }
-            
-            // UI 업데이트
             isTemporary ? renderTemporaryLists() : renderLists();
-            
-            // GitHub에 업로드
-            uploadToGithub();
         } else {
             console.error('메모를 찾을 수 없습니다:', memoId);
         }
@@ -725,323 +705,82 @@ function updateSelectedItem(items) {
     });
 }
 
-// 변경사항 감지 함수
-function detectChanges(currentLists = lists) {
-    const changes = {
-        modified: [],
-        added: [],
-        deleted: [],
-        timestamp: new Date().toISOString()
-    };
-
-    // 수정된 목록 찾기
-    currentLists.forEach(list => {
-        const oldList = lastSyncedLists.find(l => l.id === list.id);
-        if (oldList && !isEqual(list, oldList)) {
-            changes.modified.push({
-                id: list.id,
-                changes: getChangedFields(list, oldList)
-            });
-        }
-    });
-
-    // 새로 추가된 목록 찾기
-    changes.added = currentLists.filter(list => 
-        !lastSyncedLists.some(l => l.id === list.id)
-    );
-
-    // 삭제된 목록 찾기
-    changes.deleted = lastSyncedLists
-        .filter(list => !currentLists.some(l => l.id === list.id))
-        .map(list => list.id);
-
-    return changes;
-}
-
-// 변경된 필드만 추출
-function getChangedFields(newList, oldList) {
-    const changes = {};
-    
-    if (newList.title !== oldList.title) {
-        changes.title = newList.title;
-    }
-    
-    const memoChanges = {
-        added: [],
-        deleted: [],
-        modified: []
-    };
-
-    // 새 메모 찾기
-    newList.memos.forEach(newMemo => {
-        if (!oldList.memos.some(oldMemo => oldMemo.id === newMemo.id)) {
-            memoChanges.added.push(newMemo);
-        }
-    });
-
-    // 삭제된 메모 찾기
-    oldList.memos.forEach(oldMemo => {
-        if (!newList.memos.some(newMemo => newMemo.id === oldMemo.id)) {
-            memoChanges.deleted.push(oldMemo.id);
-        }
-    });
-
-    // 수정된 메모 찾기
-    newList.memos.forEach(newMemo => {
-        const oldMemo = oldList.memos.find(m => m.id === newMemo.id);
-        if (oldMemo && !isEqual(newMemo, oldMemo)) {
-            memoChanges.modified.push(newMemo);
-        }
-    });
-
-    if (Object.keys(memoChanges).length > 0) {
-        changes.memos = memoChanges;
-    }
-
-    return changes;
-}
-
-// 두 객체 비교 함수
-function isEqual(obj1, obj2) {
-    return JSON.stringify(obj1) === JSON.stringify(obj2);
-}
-
-// 변경사항 적용 함수
-function applyChanges(lists, changes) {
-    let updatedLists = [...lists];
-
-    // 삭제된 목록 제거
-    updatedLists = updatedLists.filter(list => !changes.deleted.includes(list.id));
-
-    // 수정된 목록 업데이트
-    changes.modified.forEach(mod => {
-        const index = updatedLists.findIndex(l => l.id === mod.id);
-        if (index !== -1) {
-            updatedLists[index] = applyModifications(updatedLists[index], mod.changes);
-        }
-    });
-
-    // 새 목록 추가
-    updatedLists.push(...changes.added);
-
-    return updatedLists;
-}
-
-// 수정사항 적용
-function applyModifications(list, changes) {
-    const updatedList = { ...list };
-
-    if (changes.title) {
-        updatedList.title = changes.title;
-    }
-
-    if (changes.memos) {
-        const { added, deleted, modified } = changes.memos;
-
-        // 삭제된 메모 제거
-        updatedList.memos = updatedList.memos.filter(memo => !deleted.includes(memo.id));
-
-        // 수정된 메모 업데이트
-        modified.forEach(modifiedMemo => {
-            const index = updatedList.memos.findIndex(m => m.id === modifiedMemo.id);
-            if (index !== -1) {
-                updatedList.memos[index] = modifiedMemo;
-            }
-        });
-
-        // 새 메모 추가
-        updatedList.memos.push(...added);
-    }
-
-    return updatedList;
-}
-
-// base64 인코딩 함수 수정
-function encodeBase64(str) {
-    return btoa(unescape(encodeURIComponent(str)));
-}
-
-// base64 디코딩 함수 수정
-function decodeBase64(str) {
-    return decodeURIComponent(escape(atob(str)));
-}
-
-// GitHub 업로드 함수 수정
+// GitHub에 업로드
 async function uploadToGithub() {
     try {
         const token = localStorage.getItem('github_token');
         if (!token) {
-            alert('GitHub 토큰이 없습니다. 먼저 로그인해주세요.');
+            alert('GitHub에 로그인해주세요.');
             return;
         }
 
-        // temporaryLists를 lists에 병합
-        const mergedLists = [...lists];
-        temporaryLists.forEach(tempList => {
-            const existingIndex = mergedLists.findIndex(l => l.id === tempList.id);
-            if (existingIndex === -1) {
-                mergedLists.push(tempList);
-            } else {
-                // 메모 변경사항만 병합
-                const existingList = mergedLists[existingIndex];
-                tempList.memos.forEach(tempMemo => {
-                    const existingMemoIndex = existingList.memos.findIndex(m => m.id === tempMemo.id);
-                    if (existingMemoIndex === -1) {
-                        existingList.memos.push(tempMemo);
-                    } else if (tempMemo.lastModified > existingList.memos[existingMemoIndex].lastModified) {
-                        existingList.memos[existingMemoIndex] = tempMemo;
-                    }
-                });
-            }
-        });
+        // 정렬 기능 실행
+        sortAll();
 
-        // 변경사항 감지 (병합된 lists 기준)
-        const changes = detectChanges(mergedLists);
-        
-        if (Object.keys(changes).length === 0) {
-            alert('변경된 내용이 없습니다.');
-            return;
-        }
+        const data = {
+            lists: lists,
+            temporaryLists: temporaryLists
+        };
 
-        // 현재 GitHub의 lists.json 가져오기
-        const response = await fetch('https://api.github.com/repos/nomalria/listapps/contents/lists.json', {
+        const response = await fetch('/api/upload', {
+            method: 'POST',
             headers: {
-                'Authorization': `token ${token}`,
-                'Accept': 'application/vnd.github.v3+json'
-            }
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(data)
         });
 
         if (!response.ok) {
-            throw new Error('GitHub 파일을 가져오는데 실패했습니다.');
+            throw new Error('업로드 실패');
         }
 
-        const fileData = await response.json();
-        const currentLists = JSON.parse(decodeBase64(fileData.content));
-        
-        // 변경사항 적용
-        const updatedLists = applyChanges(currentLists, changes);
-        
-        // 업데이트된 파일 업로드
-        const updateResponse = await fetch('https://api.github.com/repos/nomalria/listapps/contents/lists.json', {
-            method: 'PUT',
-            headers: {
-                'Authorization': `token ${token}`,
-                'Accept': 'application/vnd.github.v3+json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                message: 'Update lists.json with changes',
-                content: encodeBase64(JSON.stringify(updatedLists)),
-                sha: fileData.sha
-            })
-        });
-
-        if (!updateResponse.ok) {
-            throw new Error('GitHub 파일 업데이트에 실패했습니다.');
-        }
-
-        // 마지막 동기화 상태 업데이트
-        lastSyncedLists = [...mergedLists];
-        lastSyncTime = new Date().toISOString();
-        
-        // temporaryLists 초기화
-        temporaryLists = [];
-        renderTemporaryLists();
-        
-        alert('변경사항이 성공적으로 업로드되었습니다.');
+        alert('GitHub에 성공적으로 업로드되었습니다.');
     } catch (error) {
         console.error('GitHub 업로드 오류:', error);
-        alert('GitHub 업로드 중 오류가 발생했습니다: ' + error.message);
+        alert('GitHub 업로드 중 오류가 발생했습니다.');
     }
 }
 
-// GitHub에서 불러오기 함수 수정
+// GitHub에서 불러오기
 async function loadFromGithub() {
     try {
         const token = localStorage.getItem('github_token');
         if (!token) {
-            alert('GitHub 토큰이 없습니다. 먼저 로그인해주세요.');
+            alert('GitHub에 로그인해주세요.');
             return;
         }
 
-        // GitHub에서 lists.json 가져오기
-        const response = await fetch('https://api.github.com/repos/nomalria/listapps/contents/lists.json', {
+        // 확인 메시지 표시
+        if (!confirm('GitHub에 저장된 목록을 불러오겠습니까?')) {
+            return;
+        }
+
+        const response = await fetch('/api/download', {
+            method: 'GET',
             headers: {
-                'Authorization': `token ${token}`,
-                'Accept': 'application/vnd.github.v3+json'
+                'Authorization': `Bearer ${token}`
             }
         });
 
         if (!response.ok) {
-            throw new Error('GitHub 파일을 가져오는데 실패했습니다.');
+            throw new Error('다운로드 실패');
         }
 
-        const fileData = await response.json();
-        const githubLists = JSON.parse(decodeBase64(fileData.content));
-
-        // 현재 데이터와 GitHub 데이터 병합
-        const mergedLists = mergeLists([...lists, ...temporaryLists], githubLists);
-
-        // 중복 목록 제거
-        const uniqueLists = [];
-        mergedLists.forEach(list => {
-            if (!uniqueLists.some(uniqueList => isSameList(uniqueList.title, list.title))) {
-                uniqueLists.push(list);
-            }
-        });
-
-        // 병합된 데이터로 업데이트
-        lists = uniqueLists;
-        temporaryLists = [];  // temporaryLists 초기화
-        lastSyncedLists = [...lists];
-        lastSyncTime = new Date().toISOString();
-
-        // UI 업데이트
+        const data = await response.json();
+        lists = data.lists || [];
+        temporaryLists = data.temporaryLists || [];
+        
+        saveLists();
         renderLists();
         renderTemporaryLists();
         updateStats();
         
-        alert('GitHub에서 데이터를 성공적으로 불러왔습니다.');
+        alert('GitHub에서 성공적으로 불러왔습니다.');
     } catch (error) {
-        console.error('GitHub 불러오기 오류:', error);
-        alert('GitHub에서 데이터를 불러오는 중 오류가 발생했습니다: ' + error.message);
+        console.error('GitHub 다운로드 오류:', error);
+        alert('GitHub에서 불러오는 중 오류가 발생했습니다.');
     }
-}
-
-// 데이터 병합 함수 수정
-function mergeLists(currentLists, githubLists) {
-    const merged = [...githubLists];
-
-    // 현재 클라이언트의 데이터와 비교하여 병합
-    currentLists.forEach(currentList => {
-        // 같은 단어 배열을 가진 목록이 있는지 확인
-        const existingListIndex = merged.findIndex(g => isSameList(g.title, currentList.title));
-        
-        if (existingListIndex === -1) {
-            // GitHub에 없는 새 목록 추가
-            merged.push(currentList);
-        } else {
-            // 메모 병합
-            const existingList = merged[existingListIndex];
-            
-            // GitHub의 메모를 우선적으로 사용
-            const githubMemos = existingList.memos;
-            const currentMemos = currentList.memos;
-            
-            // GitHub에 있는 메모 중 현재 클라이언트에 없는 메모는 유지
-            // 현재 클라이언트의 메모 중 GitHub에 없는 메모는 추가
-            const finalMemos = [...githubMemos];
-            currentMemos.forEach(currentMemo => {
-                if (!githubMemos.some(githubMemo => githubMemo.id === currentMemo.id)) {
-                    finalMemos.push(currentMemo);
-                }
-            });
-            
-            existingList.memos = finalMemos;
-        }
-    });
-
-    return merged;
 }
 
 // GitHub 로그인 상태 확인 및 UI 업데이트
