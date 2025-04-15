@@ -1012,9 +1012,12 @@ function mergeLists(currentLists, githubLists) {
                 if (existingMemoIndex === -1) {
                     // 새 메모 추가
                     existingList.memos.push(currentMemo);
-                } else if (currentMemo.lastModified > existingList.memos[existingMemoIndex].lastModified) {
-                    // 최신 메모로 업데이트
-                    existingList.memos[existingMemoIndex] = currentMemo;
+                } else {
+                    // 최신 메모로 업데이트 (lastModified 비교)
+                    const existingMemo = existingList.memos[existingMemoIndex];
+                    if (new Date(currentMemo.lastModified) > new Date(existingMemo.lastModified)) {
+                        existingList.memos[existingMemoIndex] = currentMemo;
+                    }
                 }
             });
         }
