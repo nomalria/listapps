@@ -383,19 +383,35 @@ button:hover {
     font-size: 1.1em;
     min-width: 20px;
     text-align: center;
+    position: relative;
+    line-height: 1.5;
 }
 
-.memo-status-icon.success {
-    /* color: green; */
+/* 상태 텍스트 (아이콘 위) */
+.memo-status-icon::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.65em;
+    font-weight: bold;
+    color: #555;
+    white-space: nowrap;
 }
 
-.memo-status-icon.fail {
-    /* color: red; */
+.memo-status-icon.success::before {
+    content: '공격성공';
+    color: #28a745;
+}
+
+.memo-status-icon.fail::before {
+    content: '공격실패';
+    color: #dc3545;
 }
 
 .memo-status-icon.unknown {
     /* color: #ccc; */
-    /* content: '❓'; */
 }
 
 .memo-text {
