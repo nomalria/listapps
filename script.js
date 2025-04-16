@@ -14,21 +14,34 @@ let selectedIndex = -1;
 let editingListId = null;
 let editingMemoId = null;
 
-// 방덱 목록 불러오기
+// 방덱 목록 불러오기 (임시 목록 로드 추가)
 function loadLists() {
     const savedLists = localStorage.getItem('lists');
     if (savedLists) {
         lists = JSON.parse(savedLists);
-        console.log('로드된 목록:', lists);
-        renderLists();
-        updateStats();
+        console.log('로드된 기존 목록:', lists);
     }
+    const savedTemporaryLists = localStorage.getItem('temporaryLists'); // 임시 목록 로드
+    if (savedTemporaryLists) {
+        temporaryLists = JSON.parse(savedTemporaryLists);
+        console.log('로드된 임시 목록:', temporaryLists);
+    }
+    renderLists();
+    renderTemporaryLists(); // 로드 후 임시 목록도 렌더링
+    updateStats();
 }
 
 // 방덱 목록 저장
 function saveLists() {
     localStorage.setItem('lists', JSON.stringify(lists));
     updateStats();
+}
+
+// 임시 방덱 목록 저장 함수 추가
+function saveTemporaryLists() {
+    localStorage.setItem('temporaryLists', JSON.stringify(temporaryLists));
+    // 임시 목록 변경 시 통계는 updateStats()에서 lists 기준으로 계산되므로 여기서는 호출 불필요
+    // 필요하다면 임시 목록 개수를 표시하는 별도 UI 업데이트 로직 추가 가능
 }
 
 // 방덱 검색
@@ -196,6 +209,8 @@ function addNewList() {
     
     searchInput.value = '';
     updateStats();
+    saveTemporaryLists(); // 임시 목록 변경 후 저장
+    saveLists(); // 기존 목록이 변경되었을 수도 있으므로 저장
 }
 
 // 임시 목록 렌더링
@@ -267,7 +282,8 @@ function deleteList(listId, isTemporary = false) {
             // 임시 목록에서 삭제
             temporaryLists = temporaryLists.filter(list => list.id.toString() !== listId.toString());
             renderTemporaryLists();
-            updateStats();
+            updateStats(); // 통계는 기존 목록 기준이므로 업데이트 필요 없음
+            saveTemporaryLists(); // 임시 목록 변경 후 저장
         } else {
             // 기존 목록에서 삭제
             lists = lists.filter(list => list.id.toString() !== listId.toString());
@@ -297,6 +313,8 @@ function addMemo(listId, isTemporary = false) {
             });
             if (!isTemporary) {
                 saveLists();
+            } else {
+                saveTemporaryLists(); // 임시 목록 메모 추가 후 저장
             }
             isTemporary ? renderTemporaryLists() : renderLists();
             memoInput.value = '';
@@ -313,6 +331,8 @@ function deleteMemo(listId, memoId, isTemporary = false) {
             list.memos = list.memos.filter(memo => memo.id.toString() !== memoId.toString());
             if (!isTemporary) {
                 saveLists();
+            } else {
+                saveTemporaryLists(); // 임시 목록 메모 삭제 후 저장
             }
             isTemporary ? renderTemporaryLists() : renderLists();
         }
@@ -500,6 +520,8 @@ function saveListEdit(listId, isTemporary = false) {
         list.title = newTitle;
         if (!isTemporary) {
             saveLists();
+        } else {
+            saveTemporaryLists(); // 임시 목록 제목 수정 후 저장
         }
         isTemporary ? renderTemporaryLists() : renderLists();
     }
@@ -570,6 +592,8 @@ function saveMemoEdit(listId, memoId, isTemporary = false) {
             memo.text = newText;
             if (!isTemporary) {
                 saveLists();
+            } else {
+                saveTemporaryLists(); // 임시 목록 메모 수정 후 저장
             }
             isTemporary ? renderTemporaryLists() : renderLists();
         } else {
@@ -629,7 +653,8 @@ function sortAll() {
     temporaryLists = [];
     
     // 7. 목록 저장 및 렌더링
-    saveLists();
+    saveLists(); // 병합된 기존 목록 저장
+    saveTemporaryLists(); // 비워진 임시 목록 상태 저장
     renderLists();
     renderTemporaryLists();
     updateStats();
@@ -799,9 +824,10 @@ async function uploadToGithub() {
         }
 
         // 변경사항 업로드 성공 시 임시 목록 비우기 (선택사항)
-        if (temporaryLists.length > 0) {
+        if (dataToUpload.temporaryLists && temporaryLists.length > 0) { // temporaryLists를 보냈는지 확인
              temporaryLists = [];
              renderTemporaryLists();
+             saveTemporaryLists(); // 비워진 임시 목록 상태 저장
         }
 
         alert(successMessage);
@@ -838,10 +864,9 @@ async function loadChangesFromGithub() {
         }
 
         const data = await response.json(); 
-        // 서버가 { temporaryLists: [...] } 형태로 응답한다고 가정
         temporaryLists = data.temporaryLists || []; 
-        
-        renderTemporaryLists(); // 임시 목록만 다시 렌더링
+        saveTemporaryLists(); // 불러온 임시 목록 상태 저장
+        renderTemporaryLists(); 
         alert('GitHub에서 변경사항을 성공적으로 불러왔습니다.');
 
     } catch (error) {
@@ -880,7 +905,8 @@ async function loadAllFromGithub() {
         lists = data.lists || [];
         temporaryLists = data.temporaryLists || [];
         
-        saveLists(); // 기존 목록 로컬 스토리지에 저장
+        saveLists(); // 불러온 기존 목록 저장
+        saveTemporaryLists(); // 불러온 임시 목록 저장
         renderLists();
         renderTemporaryLists();
         updateStats();
