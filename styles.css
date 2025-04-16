@@ -318,7 +318,6 @@ button:hover {
     padding: 10px;
     border-bottom: 1px solid #eee;
     display: flex;
-    justify-content: space-between;
     align-items: center;
 }
 
@@ -379,13 +378,36 @@ button:hover {
     background-color: #d32f2f;
 }
 
+.memo-status-icon {
+    margin-right: 8px;
+    font-size: 1.1em;
+    min-width: 20px;
+    text-align: center;
+}
+
+.memo-status-icon.success {
+    /* color: green; */
+}
+
+.memo-status-icon.fail {
+    /* color: red; */
+}
+
+.memo-status-icon.unknown {
+    /* color: #ccc; */
+    /* content: '❓'; */
+}
+
 .memo-text {
     flex: 1;
+    word-break: break-all;
 }
 
 .memo-buttons {
     display: flex;
-    gap: 8px;
+    gap: 5px;
+    align-items: center;
+    margin-left: 10px;
 }
 
 /* 정렬 섹션 */
@@ -683,4 +705,34 @@ button:hover {
 
 .github-action-btn:last-child {
     margin-bottom: 0;
+}
+
+/* 상태 버튼 기본 스타일 */
+.status-btn {
+    padding: 3px 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    background-color: #f0f0f0;
+    transition: background-color 0.2s, border-color 0.2s;
+    line-height: 1;
+}
+
+.status-btn:hover {
+    background-color: #e0e0e0;
+}
+
+/* 성공/실패 버튼 활성 상태 */
+.status-btn.active {
+    border-width: 2px;
+}
+.status-btn.success-btn.active {
+    border-color: #28a745;
+    background-color: #e9f7ec;
+}
+
+.status-btn.fail-btn.active {
+    border-color: #dc3545;
+    background-color: #fdecea;
 } 
