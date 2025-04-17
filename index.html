@@ -60,7 +60,11 @@
         </div>
         
         <!-- 정렬 버튼 -->
-        <button id="sortBtn" class="sort-btn">목록 및 메모 정렬</button>
+        <div class="button-container">
+            <button id="addTemporaryBtn" class="action-btn">기존목록 추가</button>
+            <button id="sortBtn" class="action-btn">목록 및 메모 정렬</button>
+            <div id="actionStatus" class="action-status"></div>
+        </div>
         
         <!-- 임시 목록 섹션 -->
         <div class="temporary-section">
@@ -72,6 +76,7 @@
         <div class="existing-section">
             <h2>기존 목록</h2>
             <div id="lists" class="lists-container"></div>
+            <div id="paginationControls" class="pagination-controls"></div>
         </div>
     </div>
     
@@ -158,7 +163,10 @@
             // 추가 버튼 이벤트 리스너
             document.getElementById('addListBtn').addEventListener('click', addNewList);
             
-            // 정렬 버튼 이벤트 리스너
+            // 기존목록 추가 버튼 이벤트 리스너 (새로 추가)
+            document.getElementById('addTemporaryBtn').addEventListener('click', addTemporaryToLists);
+            
+            // 정렬 버튼 이벤트 리스너 (함수는 그대로 sortAll 호출)
             document.getElementById('sortBtn').addEventListener('click', sortAll);
             
             // GitHub 버튼 이벤트 리스너

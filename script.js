@@ -3,6 +3,8 @@ let lists = [];
 let temporaryLists = [];
 let currentListId = null;
 let currentFilterType = 'all'; // 현재 활성화된 필터 타입 ('all', '4방덱', '5방덱', '기타')
+let currentPage = 1; // 현재 페이지 번호 (페이지네이션용)
+const itemsPerPage = 20; // 페이지당 항목 수 (페이지네이션용)
 
 // 삭제 확인을 위한 타이머 객체
 const deleteTimers = {};
@@ -13,6 +15,7 @@ let selectedIndex = -1;
 // 전역 변수 추가
 let editingListId = null;
 let editingMemoId = null;
+let statusTimeoutId = null; // 상태 메시지 타임아웃 ID
 
 // 방덱 목록 불러오기 (메모 구조 변환 로직 추가)
 function loadLists() {
@@ -88,7 +91,7 @@ function loadLists() {
             temporaryLists = [];
         }
     }
-    renderLists();
+    renderLists(1);
     renderTemporaryLists();
     updateStats();
 }
@@ -346,16 +349,30 @@ function renderTemporaryLists() {
 function deleteList(listId, isTemporary = false) {
     if (confirm('해당 목록을 삭제하시겠습니까?')) {
         if (isTemporary) {
-            // 임시 목록에서 삭제
             temporaryLists = temporaryLists.filter(list => list.id.toString() !== listId.toString());
             renderTemporaryLists();
-            updateStats(); // 통계는 기존 목록 기준이므로 업데이트 필요 없음
-            saveTemporaryLists(); // 임시 목록 변경 후 저장
+            saveTemporaryLists();
         } else {
-            // 기존 목록에서 삭제
             lists = lists.filter(list => list.id.toString() !== listId.toString());
             saveLists();
-            renderLists();
+            // 삭제 후 현재 페이지에 아이템이 남아있는지 확인
+            const totalItems = lists.filter(list => {
+                if (currentFilterType === 'all') return true;
+                if (currentFilterType === '4방덱') return list.title.startsWith('4방덱');
+                if (currentFilterType === '5방덱') return list.title.startsWith('5방덱');
+                if (currentFilterType === '기타') return !list.title.startsWith('4방덱') && !list.title.startsWith('5방덱');
+                return true;
+            }).length;
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+            // 현재 페이지가 삭제 후 존재하지 않으면 이전 페이지나 1페이지로 이동
+            if (currentPage > totalPages && totalPages > 0) {
+                renderLists(totalPages);
+            } else if (totalItems === 0) {
+                renderLists(1); // 아이템이 없으면 1페이지 (빈 화면)
+            } else {
+                 renderLists(currentPage); // 현재 페이지 다시 로드
+            }
             updateStats();
         }
     }
@@ -498,11 +515,13 @@ function deleteMemo(listId, memoId, isTemporary = false) {
     }
 }
 
-// 방덱 목록 렌더링 (상태 아이콘 및 버튼 추가)
-function renderLists() {
+// 방덱 목록 렌더링 (페이지네이션 적용)
+function renderLists(page = 1) {
+    currentPage = page;
     const listsContainer = document.getElementById('lists');
-    
-    // 현재 필터 타입에 따라 목록 필터링
+    if (!listsContainer) return;
+
+    // 1. 현재 필터 타입에 따라 목록 필터링
     let filteredLists = lists;
     if (currentFilterType === '4방덱') {
         filteredLists = lists.filter(list => list.title.startsWith('4방덱'));
@@ -510,9 +529,15 @@ function renderLists() {
         filteredLists = lists.filter(list => list.title.startsWith('5방덱'));
     } else if (currentFilterType === '기타') {
         filteredLists = lists.filter(list => !list.title.startsWith('4방덱') && !list.title.startsWith('5방덱'));
-    } // 'all'일 경우 모든 목록 표시 (기본값)
+    }
 
-    listsContainer.innerHTML = filteredLists.map(list => `
+    // 2. 현재 페이지에 해당하는 목록만 추출
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedLists = filteredLists.slice(startIndex, endIndex);
+
+    // 3. 목록 렌더링
+    listsContainer.innerHTML = paginatedLists.map(list => `
         <div class="list-item" data-list-id="${list.id}">
             <div class="list-title">
                 <span class="list-title-text">${list.title}</span>
@@ -565,8 +590,8 @@ function renderLists() {
         </div>
     `).join('');
 
-    // 이벤트 리스너 추가
-    document.querySelectorAll('.list-title').forEach(title => {
+    // 4. 이벤트 리스너 추가
+    document.querySelectorAll('#lists .list-title').forEach(title => {
         title.addEventListener('click', function(e) {
             if (!e.target.closest('.button-group')) {
                 const listId = this.closest('.list-item').dataset.listId;
@@ -574,6 +599,124 @@ function renderLists() {
             }
         });
     });
+
+    // 5. 페이지네이션 컨트롤 렌더링
+    renderPaginationControls(filteredLists.length);
+}
+
+// 페이지네이션 컨트롤 렌더링 함수 (개선된 버전: 처음/끝 페이지 버튼 추가)
+function renderPaginationControls(totalItems) {
+    const paginationControls = document.getElementById('paginationControls');
+    if (!paginationControls) return;
+
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    paginationControls.innerHTML = ''; // 기존 컨트롤 초기화
+
+    if (totalPages <= 1) return; // 페이지가 1개 이하면 컨트롤 표시 안 함
+
+    // --- 개별 페이지 이동 버튼 영역 --- (상단)
+    const individualNav = document.createElement('div');
+    individualNav.classList.add('pagination-individual-nav');
+    individualNav.style.marginBottom = '10px'; // 그룹 컨트롤과 간격
+
+    const prevPageButton = document.createElement('button');
+    prevPageButton.textContent = '이전';
+    prevPageButton.disabled = currentPage === 1;
+    prevPageButton.addEventListener('click', () => {
+        if (currentPage > 1) {
+            renderLists(currentPage - 1);
+        }
+    });
+    individualNav.appendChild(prevPageButton);
+
+    const nextPageButton = document.createElement('button');
+    nextPageButton.textContent = '다음';
+    nextPageButton.disabled = currentPage === totalPages;
+    nextPageButton.addEventListener('click', () => {
+        if (currentPage < totalPages) {
+            renderLists(currentPage + 1);
+        }
+    });
+    individualNav.appendChild(nextPageButton);
+
+    paginationControls.appendChild(individualNav);
+
+    // --- 페이지 그룹 이동 및 번호 영역 --- (하단)
+    const groupNav = document.createElement('div');
+    groupNav.classList.add('pagination-group-nav');
+
+    const pagesPerGroup = 10; // 한 번에 보여줄 페이지 번호 개수
+    const currentGroup = Math.ceil(currentPage / pagesPerGroup);
+    const startPage = (currentGroup - 1) * pagesPerGroup + 1;
+    const endPage = Math.min(startPage + pagesPerGroup - 1, totalPages);
+
+    // 맨 처음(<<) 버튼
+    const firstPageButton = document.createElement('button');
+    firstPageButton.innerHTML = '&laquo;'; // << 기호
+    firstPageButton.title = '처음 페이지로';
+    firstPageButton.disabled = currentPage === 1;
+    firstPageButton.addEventListener('click', () => {
+        if (currentPage !== 1) {
+            renderLists(1);
+        }
+    });
+    groupNav.appendChild(firstPageButton);
+
+    // 이전 그룹(<) 버튼
+    const prevGroupButton = document.createElement('button');
+    prevGroupButton.innerHTML = '&lt;'; // < 기호
+    prevGroupButton.title = '이전 페이지 그룹으로';
+    prevGroupButton.disabled = currentGroup === 1;
+    prevGroupButton.addEventListener('click', () => {
+        if (currentGroup > 1) {
+            const targetPage = startPage - pagesPerGroup;
+            renderLists(targetPage);
+        }
+    });
+    groupNav.appendChild(prevGroupButton);
+
+    // 페이지 번호
+    for (let i = startPage; i <= endPage; i++) {
+        const pageNumber = document.createElement('a');
+        pageNumber.href = '#'; // 실제 이동 방지
+        pageNumber.textContent = i;
+        pageNumber.classList.add('page-number');
+        if (i === currentPage) {
+            pageNumber.classList.add('active');
+        }
+        pageNumber.addEventListener('click', (e) => {
+            e.preventDefault();
+            renderLists(i);
+        });
+        groupNav.appendChild(pageNumber);
+    }
+
+    // 다음 그룹(>) 버튼
+    const nextGroupButton = document.createElement('button');
+    nextGroupButton.innerHTML = '&gt;'; // > 기호
+    nextGroupButton.title = '다음 페이지 그룹으로';
+    nextGroupButton.disabled = endPage >= totalPages;
+    nextGroupButton.addEventListener('click', () => {
+        if (endPage < totalPages) {
+            const targetPage = startPage + pagesPerGroup;
+            renderLists(targetPage);
+        }
+    });
+    groupNav.appendChild(nextGroupButton);
+
+    // 맨 마지막(>>) 버튼
+    const lastPageButton = document.createElement('button');
+    lastPageButton.innerHTML = '&raquo;'; // >> 기호
+    lastPageButton.title = '마지막 페이지로';
+    lastPageButton.disabled = currentPage === totalPages;
+    lastPageButton.addEventListener('click', () => {
+        if (currentPage !== totalPages) {
+            renderLists(totalPages);
+        }
+    });
+    groupNav.appendChild(lastPageButton);
+
+    paginationControls.appendChild(groupNav);
 }
 
 // 방덱 클릭 처리
@@ -780,49 +923,168 @@ function cancelMemoEdit(listId, memoId, isTemporary = false) {
     editingMemoId = null;
 }
 
-// 목록 및 메모 정렬 (중복 덮어쓰기 로직 추가)
-function sortAll() {
-    // 1. 임시 목록의 제목을 키로 하는 맵 생성 (덮어쓰기 확인용)
-    const tempMap = new Map();
-    temporaryLists.forEach(item => tempMap.set(item.title, item));
+// 상태 메시지 업데이트 (버튼 아래에 표시되도록 수정)
+// triggerElement: 메시지를 유발한 버튼 요소
+function updateActionStatus(triggerElement, message, duration = 3000) {
+    const statusElement = document.getElementById('actionStatus');
+    if (!statusElement || !triggerElement) return;
 
-    // 2. 기존 목록에서 임시 목록과 중복되는 항목 제거
-    lists = lists.filter(list => !tempMap.has(list.title));
+    // 기존 타임아웃 제거
+    if (statusTimeoutId) {
+        clearTimeout(statusTimeoutId);
+    }
 
-    // 3. 필터링된 기존 목록과 임시 목록 병합
-    lists = [...lists, ...temporaryLists];
+    // 버튼 위치 계산 (부모 컨테이너 기준)
+    const buttonRect = triggerElement.getBoundingClientRect();
+    const containerRect = triggerElement.parentElement.getBoundingClientRect();
+
+    const topOffset = buttonRect.bottom - containerRect.top + 5; // 버튼 아래 5px
+    const leftOffset = buttonRect.left - containerRect.left + buttonRect.width / 2; // 버튼 가로 중앙
+
+    // 상태 메시지 위치 및 내용 설정
+    statusElement.style.top = `${topOffset}px`;
+    statusElement.style.left = `${leftOffset}px`;
+    statusElement.textContent = message;
+    statusElement.style.opacity = 1;
+    statusElement.style.display = 'block'; // 보이도록 설정
+
+    // 일정 시간 후 메시지 숨기기
+    statusTimeoutId = setTimeout(() => {
+        statusElement.style.opacity = 0;
+        // 트랜지션 완료 후 display none 처리 (선택 사항)
+        setTimeout(() => {
+            if (statusElement.style.opacity === '0') { // opacity가 0일 때만 숨김
+                 statusElement.style.display = 'none';
+            }
+        }, 500); // transition 시간과 일치시킴
+    }, duration);
+}
+
+// 방덱 타입을 반환하는 함수 (4방덱, 5방덱, 기타)
+function getDeckType(title) {
+    if (title.startsWith('4방덱')) {
+        return '4방덱';
+    } else if (title.startsWith('5방덱')) {
+        return '5방덱';
+    } else {
+        return '기타';
+    }
+}
+
+// 임시 목록의 모든 항목을 기존 목록으로 이동 (1페이지로 이동)
+function addTemporaryToLists(event) {
+    if (temporaryLists.length === 0) {
+        updateActionStatus(event.currentTarget, "임시 목록이 비어 있습니다.", 2000);
+        return;
+    }
+
+    // 임시 목록의 항목들을 기존 목록의 시작 부분에 추가
+    lists = [...temporaryLists, ...lists];
     
-    // 4. 단어 순으로 목록 정렬
-    lists.sort((a, b) => {
-        const wordsA = a.title.split(' ');
-        const wordsB = b.title.split(' ');
-        // 제목의 첫 두 단어를 기준으로 정렬
-        const compareResult = wordsA[0].localeCompare(wordsB[0]) || wordsA[1].localeCompare(wordsB[1]);
-        if (compareResult !== 0) {
-            return compareResult;
-        }
-        // 제목이 같으면 ID를 기준으로 정렬 (안정 정렬 보장)
-        return a.id.toString().localeCompare(b.id.toString());
-    });
+    // 임시 목록 비우기
+    const addedCount = temporaryLists.length; // 추가된 개수 저장 (메시지 변경으로 실제 사용은 안 함)
+    temporaryLists = [];
+    
+    // 변경사항 저장
+    saveLists();
+    saveTemporaryLists();
+    
+    // 화면 다시 렌더링
+    renderLists(1);
+    renderTemporaryLists();
+    updateStats(); // 통계 업데이트
+    
+    // 성공 메시지 표시
+    updateActionStatus(event.currentTarget, "기존 목록에 추가됨", 3000);
+}
 
-    // 5. 각 목록 내 메모를 텍스트 순으로 정렬
+// 목록 및 메모 정렬 함수 (1페이지로 이동)
+function sortAll(event) {
+    console.log('정렬 시작...');
+    // 기존 목록 정렬
+    lists.sort((a, b) => {
+        // 먼저 4방덱, 5방덱, 기타 순으로 정렬
+        const typeA = getDeckType(a.title);
+        const typeB = getDeckType(b.title);
+        
+        if (typeA !== typeB) {
+            const order = { '4방덱': 1, '5방덱': 2, '기타': 3 };
+            return order[typeA] - order[typeB];
+        }
+        
+        // 같은 타입 내에서는 이름순 정렬
+        return a.title.localeCompare(b.title, 'ko');
+    });
+    console.log('기존 목록 정렬 완료:', lists);
+
+    // 기존 목록 내 메모 정렬
     lists.forEach(list => {
-        if (list.memos && list.memos.length > 1) {
-            list.memos.sort((memoA, memoB) => {
-                return memoA.text.localeCompare(memoB.text);
+        if (list.memos && list.memos.length > 0) {
+            list.memos.sort((a, b) => {
+                // 1. 상태별 정렬 (성공 > 실패 > 미지정)
+                const statusOrder = { 'success': 1, 'fail': 2, null: 3 };
+                const statusA = a.status === undefined ? null : a.status;
+                const statusB = b.status === undefined ? null : b.status;
+
+                if (statusA !== statusB) {
+                    return statusOrder[statusA] - statusOrder[statusB];
+                }
+
+                // 2. 같은 상태 내에서는 텍스트 길이순 정렬 (짧은 것부터)
+                const textA = a.text || '';
+                const textB = b.text || '';
+                 if (textA.length !== textB.length) {
+                    return textA.length - textB.length;
+                }
+                
+                // 3. 길이도 같으면 가나다순 정렬
+                return textA.localeCompare(textB, 'ko');
             });
         }
     });
+    console.log('기존 목록 메모 정렬 완료');
+
+    // 임시 목록 정렬 (동일한 로직 적용)
+    temporaryLists.sort((a, b) => {
+        const typeA = getDeckType(a.title);
+        const typeB = getDeckType(b.title);
+        if (typeA !== typeB) {
+            const order = { '4방덱': 1, '5방덱': 2, '기타': 3 };
+            return order[typeA] - order[typeB];
+        }
+        return a.title.localeCompare(b.title, 'ko');
+    });
+     console.log('임시 목록 정렬 완료:', temporaryLists);
+
+    temporaryLists.forEach(list => {
+         if (list.memos && list.memos.length > 0) {
+            list.memos.sort((a, b) => {
+                 const statusOrder = { 'success': 1, 'fail': 2, null: 3 };
+                const statusA = a.status === undefined ? null : a.status;
+                const statusB = b.status === undefined ? null : b.status;
+                 if (statusA !== statusB) {
+                    return statusOrder[statusA] - statusOrder[statusB];
+                }
+                const textA = a.text || '';
+                const textB = b.text || '';
+                 if (textA.length !== textB.length) {
+                    return textA.length - textB.length;
+                }
+                return textA.localeCompare(textB, 'ko');
+            });
+        }
+    });
+    console.log('임시 목록 메모 정렬 완료');
+
+    // 변경 사항 저장
+    saveLists();
+    saveTemporaryLists();
     
-    // 6. 임시 목록 비우기
-    temporaryLists = [];
+    // 화면 다시 렌더링
+    renderLists(1);
     
-    // 7. 목록 저장 및 렌더링
-    saveLists(); // 병합된 기존 목록 저장
-    saveTemporaryLists(); // 비워진 임시 목록 상태 저장
-    renderLists();
-    renderTemporaryLists();
-    updateStats();
+    // 정렬 완료 메시지 표시
+    updateActionStatus(event.currentTarget, '모든 목록과 메모가 정렬되었습니다.', 3000);
 }
 
 // 페이지 로드 시 이벤트 리스너 추가
@@ -913,18 +1175,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         loadGithubBtn.addEventListener('click', loadFromGithub);
     }
 
-    // 통계 항목 클릭 이벤트 리스너 추가
+    // 통계 항목 클릭 이벤트 리스너 추가 (필터 변경 시 1페이지로)
     document.querySelectorAll('.stats-section .stat-item').forEach(item => {
         item.addEventListener('click', function() {
             currentFilterType = this.dataset.filterType;
             console.log('Filter changed to:', currentFilterType);
-            
-            // 모든 항목에서 'selected' 클래스 제거
             document.querySelectorAll('.stats-section .stat-item').forEach(el => el.classList.remove('selected'));
-            // 클릭된 항목에 'selected' 클래스 추가
             this.classList.add('selected');
-            
-            renderLists(); // 필터링된 목록 다시 렌더링
+            renderLists(1); // 필터 변경 시 1페이지로 이동
         });
     });
 
@@ -947,7 +1205,7 @@ function updateSelectedItem(items) {
     });
 }
 
-// GitHub에 업로드 (조건부 로직 추가)
+// GitHub에 업로드 (조건부 로직 및 사용자 제한 추가)
 async function uploadToGithub() {
     const token = localStorage.getItem('github_token');
     if (!token) {
@@ -955,6 +1213,16 @@ async function uploadToGithub() {
         return;
     }
 
+    // 사용자 이름 확인 (nomalria 계정만 허용)
+    const usernameSpan = document.getElementById('githubUsername');
+    const currentUsername = usernameSpan ? usernameSpan.textContent : null;
+
+    if (currentUsername !== 'nomalria') {
+        alert('제한된 기능입니다');
+        return; // nomalria가 아니면 업로드 중단
+    }
+
+    // --- 기존 업로드 로직 --- 
     let uploadEndpoint = '';
     let dataToUpload = {};
     let successMessage = '';
@@ -1072,7 +1340,7 @@ async function loadAllFromGithub() {
         
         saveLists(); // 불러온 기존 목록 저장
         saveTemporaryLists(); // 불러온 임시 목록 저장
-        renderLists();
+        renderLists(1); // GitHub에서 전체 로드 후 1페이지 렌더링
         renderTemporaryLists();
         updateStats();
         

@@ -642,6 +642,57 @@ button:hover {
     text-align: center;
 }
 
+/* 페이지네이션 컨트롤 */
+.pagination-controls {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.pagination-controls button,
+.pagination-controls .page-number {
+    display: inline-block;
+    padding: 8px 12px;
+    margin: 0 3px;
+    border: 1px solid #ddd;
+    background-color: #fff;
+    color: #007bff;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.3s, color 0.3s;
+    text-decoration: none;
+    font-size: 0.9em;
+    min-width: 35px; /* 최소 너비 확보 */
+    text-align: center; /* 내부 텍스트 중앙 정렬 추가 */
+    box-sizing: border-box; /* 패딩 포함하여 너비 계산 */
+}
+
+.pagination-controls button:hover,
+.pagination-controls .page-number:hover {
+    background-color: #e9ecef;
+    border-color: #ced4da;
+}
+
+.pagination-controls button:disabled {
+    color: #6c757d;
+    cursor: not-allowed;
+    background-color: #e9ecef;
+    border-color: #ddd;
+}
+
+.pagination-controls .page-number.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+    cursor: default;
+}
+
+.pagination-controls .page-number.disabled { /* 페이지 번호가 없을 때 (예: ...) */
+    color: #6c757d;
+    background-color: transparent;
+    border: none;
+    cursor: default;
+}
+
 /* GitHub 상태 표시 */
 .github-status {
     display: flex;
@@ -751,4 +802,72 @@ button:hover {
 .status-btn.fail-btn.active {
     border-color: #dc3545;
     background-color: #fdecea;
-} 
+}
+
+/* 버튼 컨테이너 */
+.button-container {
+    display: flex;
+    justify-content: center; /* 버튼 중앙 정렬 */
+    gap: 15px; /* 버튼 사이 간격 */
+    flex-wrap: wrap; /* 내용이 넘칠 경우 줄바꿈 */
+    margin: 20px 0; /* 위아래 여백 */
+    position: relative; /* 자식 요소 absolute 위치 기준 */
+}
+
+/* 액션 버튼 공통 스타일 (기존 sort-btn 대체 및 확장) */
+.action-btn {
+    padding: 10px 20px;
+    background-color: #2196F3; /* 기본 파란색 계열 */
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s, box-shadow 0.3s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn:hover {
+    background-color: #1976D2;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 액션 상태 메시지 스타일 */
+.action-status {
+    position: absolute; /* 절대 위치 */
+    width: auto; /* 내용에 맞게 너비 조절 */
+    text-align: center; /* 텍스트 중앙 정렬 (필요 시) */
+    bottom: -1.5em; /* 버튼 아래에 위치 (line-height 고려) */
+    left: 50%; /* 임시 위치, JS에서 덮어씀 */
+    transform: translateX(-50%); /* 좌우 중앙 정렬 */
+    display: none; /* 초기에는 숨김 */
+    font-size: 0.85em;
+    color: #666;
+    height: 1.2em; /* 메시지가 없을 때도 공간 차지 (레이아웃 밀림 방지) */
+    line-height: 1.2em;
+    padding: 2px 5px; /* 약간의 내부 여백 */
+    background-color: #f0f0f0; /* 배경색 추가 (옵션) */
+    border-radius: 3px; /* 모서리 둥글게 (옵션) */
+    white-space: nowrap; /* 메시지가 길어도 줄바꿈 방지 */
+    transition: opacity 0.5s ease-out; /* 사라질 때 부드럽게 */
+    z-index: 10; /* 다른 요소 위에 표시 */
+}
+
+/* 기존 .sort-btn 스타일 제거 또는 주석 처리 */
+/*
+.sort-btn {
+    padding: 10px 20px;
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+    display: block; 
+    margin: 20px auto; 
+}
+.sort-btn:hover {
+    background-color: #1976D2;
+}
+*/ 
