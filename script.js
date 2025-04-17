@@ -361,12 +361,45 @@ function deleteList(listId, isTemporary = false) {
     }
 }
 
-// 메모 추가 (UI 직접 업데이트)
+// 메모 추가 (키워드 기반 자동 상태 설정 및 텍스트 정리)
 function addMemo(listId, isTemporary = false) {
     const memoInput = document.getElementById(`newMemoInput-${listId}`);
-    const memoText = memoInput.value.trim();
+    let memoText = memoInput.value.trim(); // let으로 변경하여 수정 가능하게 함
+    let initialStatus = null; // 메모의 초기 상태
     
     if (memoText) {
+        // 1. 키워드 확인 및 상태 설정, 텍스트 정리 (메모 추가 시에만 동작)
+        const successKeywords = ["공성", "공격성공"];
+        const failKeywords = ["공실", "공격실패"];
+        let statusSet = false;
+
+        for (const keyword of successKeywords) {
+            const regex = new RegExp(`\\s*(\/\/)?\\s*${keyword}\\b.*`, 'i'); // 키워드 및 뒤 내용 제거 정규식 (기존 로직 참고)
+            if (memoText.includes(keyword)) { 
+                initialStatus = 'success';
+                memoText = memoText.replace(regex, '').trim(); // 키워드 및 관련 내용 제거
+                statusSet = true;
+                break; // 성공 키워드 찾으면 중단
+            }
+        }
+
+        if (!statusSet) { // 성공 키워드가 없었을 경우 실패 키워드 확인
+            for (const keyword of failKeywords) {
+                const regex = new RegExp(`\\s*(\/\/)?\\s*${keyword}\\b.*`, 'i');
+                if (memoText.includes(keyword)) {
+                    initialStatus = 'fail';
+                    memoText = memoText.replace(regex, '').trim();
+                    break; // 실패 키워드 찾으면 중단
+                }
+            }
+        }
+        
+        // 키워드 제거 후 텍스트가 비었는지 확인 (선택적)
+        if (!memoText) {
+             alert("키워드 제거 후 메모 내용이 없습니다.");
+             return;
+        }
+
         const targetLists = isTemporary ? temporaryLists : lists;
         const list = targetLists.find(l => l.id.toString() === listId.toString());
         if (list) {
@@ -374,25 +407,25 @@ function addMemo(listId, isTemporary = false) {
                 alert('한 방덱에는 최대 50개의 메모만 추가할 수 있습니다.');
                 return;
             }
-            // 새 메모 객체 생성 (상태는 null로 초기화)
+            // 2. 새 메모 객체 생성 (정리된 텍스트와 결정된 상태 사용)
             const newMemo = {
-                id: Date.now().toString() + Math.random().toString(16).slice(2), // ID 생성 강화
-                text: memoText,
-                status: null 
+                id: Date.now().toString() + Math.random().toString(16).slice(2),
+                text: memoText,       // 키워드가 제거된 텍스트
+                status: initialStatus // 자동으로 결정된 상태 (또는 null)
             };
             list.memos.push(newMemo);
             
-            // 1. 데이터 저장
+            // 3. 데이터 저장
             if (!isTemporary) {
                 saveLists();
             } else {
                 saveTemporaryLists();
             }
 
-            // 2. UI 업데이트 (DOM 직접 조작)
+            // 4. UI 업데이트 (DOM 직접 조작)
             const memoListContainer = document.querySelector(`#memoSection-${listId} .memo-list`);
             if (memoListContainer) {
-                // 새 메모 항목 HTML 생성
+                // 새 메모 항목 HTML 생성 (status 반영)
                 const memoItemHTML = `
                     <div class="memo-item" data-memo-id="${newMemo.id}">
                         <span class="memo-status-icon ${newMemo.status || 'unknown'}">
@@ -400,8 +433,8 @@ function addMemo(listId, isTemporary = false) {
                         </span>
                         <span class="memo-text">${newMemo.text}</span>
                         <div class="memo-buttons">
-                            <button class="status-btn success-btn" onclick="setMemoStatus('${listId}', '${newMemo.id}', 'success', ${isTemporary})" title="성공">✅</button>
-                            <button class="status-btn fail-btn" onclick="setMemoStatus('${listId}', '${newMemo.id}', 'fail', ${isTemporary})" title="실패">❌</button>
+                             <button class="status-btn success-btn ${newMemo.status === 'success' ? 'active' : ''}" onclick="setMemoStatus('${listId}', '${newMemo.id}', 'success', ${isTemporary})" title="성공">✅</button>
+                             <button class="status-btn fail-btn ${newMemo.status === 'fail' ? 'active' : ''}" onclick="setMemoStatus('${listId}', '${newMemo.id}', 'fail', ${isTemporary})" title="실패">❌</button>
                             <button class="edit-btn" onclick="startEditMemo('${listId}', '${newMemo.id}', ${isTemporary})">편집</button>
                             <button class="delete-btn" onclick="deleteMemo('${listId}', '${newMemo.id}', ${isTemporary})">삭제</button>
                         </div>
@@ -416,25 +449,20 @@ function addMemo(listId, isTemporary = false) {
                         </div>
                     </div>
                 `;
-                // 생성된 HTML을 메모 목록 컨테이너에 추가
                 memoListContainer.insertAdjacentHTML('beforeend', memoItemHTML);
             } else {
-                 // 만약 컨테이너를 못찾으면 전체 렌더링 (안전 장치)
                  console.warn("Memo list container not found for direct update, falling back to full render.");
                  isTemporary ? renderTemporaryLists() : renderLists();
             }
 
-            // 3. 메모 카운트 업데이트
+            // 5. 메모 카운트 업데이트
             const memoCountElement = document.querySelector(`.list-item[data-list-id="${listId}"] .memo-count`);
             if (memoCountElement) {
                 memoCountElement.textContent = `${list.memos.length}/50`;
             }
             
-            // 4. 입력 필드 비우기
+            // 6. 입력 필드 비우기
             memoInput.value = '';
-
-            // 5. (삭제) 전체 목록 다시 그리지 않음
-            // isTemporary ? renderTemporaryLists() : renderLists(); 
         }
     }
 }
