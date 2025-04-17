@@ -361,7 +361,7 @@ function deleteList(listId, isTemporary = false) {
     }
 }
 
-// 메모 추가 (새로운 구조로 저장)
+// 메모 추가 (UI 직접 업데이트)
 function addMemo(listId, isTemporary = false) {
     const memoInput = document.getElementById(`newMemoInput-${listId}`);
     const memoText = memoInput.value.trim();
@@ -376,19 +376,65 @@ function addMemo(listId, isTemporary = false) {
             }
             // 새 메모 객체 생성 (상태는 null로 초기화)
             const newMemo = {
-                id: Date.now().toString(),
+                id: Date.now().toString() + Math.random().toString(16).slice(2), // ID 생성 강화
                 text: memoText,
                 status: null 
             };
             list.memos.push(newMemo);
             
+            // 1. 데이터 저장
             if (!isTemporary) {
                 saveLists();
             } else {
                 saveTemporaryLists();
             }
-            isTemporary ? renderTemporaryLists() : renderLists();
+
+            // 2. UI 업데이트 (DOM 직접 조작)
+            const memoListContainer = document.querySelector(`#memoSection-${listId} .memo-list`);
+            if (memoListContainer) {
+                // 새 메모 항목 HTML 생성
+                const memoItemHTML = `
+                    <div class="memo-item" data-memo-id="${newMemo.id}">
+                        <span class="memo-status-icon ${newMemo.status || 'unknown'}">
+                            ${newMemo.status === 'success' ? '✅' : newMemo.status === 'fail' ? '❌' : ''}
+                        </span>
+                        <span class="memo-text">${newMemo.text}</span>
+                        <div class="memo-buttons">
+                            <button class="status-btn success-btn" onclick="setMemoStatus('${listId}', '${newMemo.id}', 'success', ${isTemporary})" title="성공">✅</button>
+                            <button class="status-btn fail-btn" onclick="setMemoStatus('${listId}', '${newMemo.id}', 'fail', ${isTemporary})" title="실패">❌</button>
+                            <button class="edit-btn" onclick="startEditMemo('${listId}', '${newMemo.id}', ${isTemporary})">편집</button>
+                            <button class="delete-btn" onclick="deleteMemo('${listId}', '${newMemo.id}', ${isTemporary})">삭제</button>
+                        </div>
+                        <div class="edit-section" id="editMemoSection-${newMemo.id}">
+                            <div class="input-group">
+                                <input type="text" id="editMemoInput-${newMemo.id}" placeholder="메모 내용 수정..." onkeypress="if(event.key === 'Enter') saveMemoEdit('${listId}', '${newMemo.id}', ${isTemporary})">
+                                <div class="edit-buttons">
+                                    <button class="save-btn" onclick="saveMemoEdit('${listId}', '${newMemo.id}', ${isTemporary})">저장</button>
+                                    <button class="cancel-btn" onclick="cancelMemoEdit('${listId}', '${newMemo.id}', ${isTemporary})">취소</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                // 생성된 HTML을 메모 목록 컨테이너에 추가
+                memoListContainer.insertAdjacentHTML('beforeend', memoItemHTML);
+            } else {
+                 // 만약 컨테이너를 못찾으면 전체 렌더링 (안전 장치)
+                 console.warn("Memo list container not found for direct update, falling back to full render.");
+                 isTemporary ? renderTemporaryLists() : renderLists();
+            }
+
+            // 3. 메모 카운트 업데이트
+            const memoCountElement = document.querySelector(`.list-item[data-list-id="${listId}"] .memo-count`);
+            if (memoCountElement) {
+                memoCountElement.textContent = `${list.memos.length}/50`;
+            }
+            
+            // 4. 입력 필드 비우기
             memoInput.value = '';
+
+            // 5. (삭제) 전체 목록 다시 그리지 않음
+            // isTemporary ? renderTemporaryLists() : renderLists(); 
         }
     }
 }
@@ -1130,4 +1176,29 @@ function setMemoStatus(listId, memoId, newStatus, isTemporary = false) {
     } else {
         console.error('방덱을 찾을 수 없습니다:', listId);
     }
-} 
+}
+
+// 백틱 키로 열린 메모 섹션 닫기
+document.addEventListener('keydown', function(event) {
+    // 입력 필드(input, textarea)에 포커스가 있을 때는 작동하지 않음
+    const activeElement = document.activeElement;
+    if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+        return;
+    }
+
+    if (event.key === '`') { // 백틱 키 확인
+        console.log('Backtick key pressed');
+        // 현재 열려있는 메모 섹션을 찾음
+        const expandedMemoSection = document.querySelector('.memo-section.expanded');
+        
+        if (expandedMemoSection) {
+            // 해당 메모 섹션의 부모 list-item에서 listId를 가져옴
+            const listItem = expandedMemoSection.closest('.list-item');
+            if (listItem) {
+                const listId = listItem.dataset.listId;
+                console.log(`Closing memo section for list ID: ${listId}`);
+                toggleMemos(listId); // 기존 토글 함수를 사용하여 닫음
+            }
+        }
+    }
+}); 
