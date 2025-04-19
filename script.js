@@ -1017,28 +1017,19 @@ function sortAll(event) {
     });
     console.log('기존 목록 정렬 완료:', lists);
 
-    // 기존 목록 내 메모 정렬
+    // 기존 목록 내 메모 정렬 (첫 단어 가나다순으로 변경)
     lists.forEach(list => {
         if (list.memos && list.memos.length > 0) {
             list.memos.sort((a, b) => {
-                // 1. 상태별 정렬 (성공 > 실패 > 미지정)
-                const statusOrder = { 'success': 1, 'fail': 2, null: 3 };
-                const statusA = a.status === undefined ? null : a.status;
-                const statusB = b.status === undefined ? null : b.status;
-
-                if (statusA !== statusB) {
-                    return statusOrder[statusA] - statusOrder[statusB];
-                }
-
-                // 2. 같은 상태 내에서는 텍스트 길이순 정렬 (짧은 것부터)
                 const textA = a.text || '';
                 const textB = b.text || '';
-                 if (textA.length !== textB.length) {
-                    return textA.length - textB.length;
-                }
                 
-                // 3. 길이도 같으면 가나다순 정렬
-                return textA.localeCompare(textB, 'ko');
+                // 첫 단어 추출 (공백 기준, 없으면 전체 텍스트)
+                const firstWordA = textA.split(' ')[0];
+                const firstWordB = textB.split(' ')[0];
+                
+                // 첫 단어 가나다순 정렬 (한국어 기준)
+                return firstWordA.localeCompare(firstWordB, 'ko');
             });
         }
     });
@@ -1056,21 +1047,19 @@ function sortAll(event) {
     });
      console.log('임시 목록 정렬 완료:', temporaryLists);
 
+    // 임시 목록 내 메모 정렬 (첫 단어 가나다순으로 변경)
     temporaryLists.forEach(list => {
          if (list.memos && list.memos.length > 0) {
             list.memos.sort((a, b) => {
-                 const statusOrder = { 'success': 1, 'fail': 2, null: 3 };
-                const statusA = a.status === undefined ? null : a.status;
-                const statusB = b.status === undefined ? null : b.status;
-                 if (statusA !== statusB) {
-                    return statusOrder[statusA] - statusOrder[statusB];
-                }
                 const textA = a.text || '';
                 const textB = b.text || '';
-                 if (textA.length !== textB.length) {
-                    return textA.length - textB.length;
-                }
-                return textA.localeCompare(textB, 'ko');
+                
+                // 첫 단어 추출
+                const firstWordA = textA.split(' ')[0];
+                const firstWordB = textB.split(' ')[0];
+                
+                // 첫 단어 가나다순 정렬
+                return firstWordA.localeCompare(firstWordB, 'ko');
             });
         }
     });
